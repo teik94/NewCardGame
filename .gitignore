@@ -41,6 +41,6 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
-obj/Debug/Assembly-CSharp-vs.csproj.FileListAbsolute.txt
-obj/Debug/Assembly-CSharp-vs.csprojResolveAssemblyReference.cache
-obj/Debug/Assembly-CSharp.dll
+obj/Debug
+Temp
+Test_Data
