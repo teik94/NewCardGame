@@ -8,28 +8,32 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 using System;
-public class Attack: Card
+using UnityEngine;
+public class Attack: MonoBehaviour
 {
-	public Attack (string name, string asset, string description,
-	                  CardSuit suit, CardNumber number, CardState state, Player owner): 
-		base (Card.CardType.Basic, name, asset, description, suit, number, state, owner)
-	{
-	}
+    public CardForm Form;
+    void Start()
+    {
+        //this.CardData = new Card(global::Card.CardType.Basic, "ATTACK", asset,
+        //    "Used for attack any other player", suit, number, state, owner);
+        Card atkCard = new Card(Card.CardType.Basic, "ATTACK", "attack1", "Used to attack one player.", 
+            Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.Hand, null);
+        this.name = atkCard.CardID.ToString();
+        this.Form = new CardForm(atkCard, 0, 0, 50, 70);
+        //Form.onClick += Form_onClick;
+    }
 
-	public override void UseCard ()
-	{
-		base.UseCard ();
-	}
+    void OnMouseDown()
+    {
+        Form.Height = 500;
+        Form.Width = 300;
+        //Form.Move(new Vector2(-100, -200), 5f, null);
+    }
 
-	public override void Discard ()
-	{
-		base.Discard ();
-	}
-
-	public override void Exchange ()
-	{
-		base.Exchange ();
-	}
+    void Update()
+    {
+        if(Form.Visible)Form.Update();
+    }
 }
 
 

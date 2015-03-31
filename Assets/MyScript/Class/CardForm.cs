@@ -14,139 +14,182 @@ using UnityEngine.UI;
 
 public class CardForm
 {
-	public Card CardData;
-	public Card.CardState State = Card.CardState.None;
-	Texture2D texture;
-	Vector2 position;
-	float width;
-	float height;
-	GameObject go;
-	Button button;
-	public bool Enable = true;
-	public bool Visible = true;
+    #region Variable Declaration
+    public Card CardData;
+    public Card.CardState State = Card.CardState.None;
+    public Player Owner = null;
+    Texture2D texture;
+    Vector2 position= new Vector2(0,0);
+    float width = 50;
+    float height = 70;
+    GameObject go;    
+    Button button;
+    public bool Enable = true;
+    public bool Visible = true;
+    Vector2 newPosition = Vector2.zero;
+    float MoveSpeed = 0;
+    Action action;
+    public delegate void UpdateDelegate();
+    public UpdateDelegate FormsUpdate = null;
+    #endregion
 
-	public Button Button {
-		get {
-			return button;
-		}
-		set {
-			button = value;
-		}
-	}
+    #region Properties
+    public GameObject gameObject
+    {
+        get { return go; }
+        set { go = value; }
+    }
 
-	public Vector2 Position {
-		get {
-			return position;
-		}
-		set {
-			position = value;
-			RectTransform rt = go.GetComponent<RectTransform> ();
-			if(rt!=null)rt.anchoredPosition = position;
-		}
-	}
+    public Button Button
+    {
+        get
+        {
+            return button;
+        }
+        set
+        {
+            button = value;
+        }
+    }
 
-	public float Width {
-		get {
-			return width;
-		}
-		set {
-			width = value;
-			RectTransform rt = go.GetComponent<RectTransform> ();
-			if(rt!=null)rt.sizeDelta = new Vector2 (Width, Height);
-		}
-	}
+    public Vector2 Position
+    {
+        get
+        {
+            return position;
+        }
+        set
+        {
+            position = value;
+            //RectTransform rt = go.GetComponent<RectTransform>();
+            //if (rt != null)
+            //{
+            //    rt.anchoredPosition = Position;
+            //}
+        }
+    }
 
-	public float Height {
-		get {
-			return height;
-		}
-		set {
-			height = value;
-			RectTransform rt = go.GetComponent<RectTransform> ();
-			if(rt!=null)rt.sizeDelta = new Vector2 (Width, Height);
-		}
-	}
+    public float Width
+    {
+        get
+        {
+            return width;
+        }
+        set
+        {
+            width = value;
+            //RectTransform rt = go.GetComponent<RectTransform>();
+            //if (rt != null)
+            //{
+            //    rt.sizeDelta = new Vector2(Width, Height);
+            //}
+        }
+    }
 
-	public CardForm (Card _card, float x, float y, float width, float heigh)
-	{
-		this.CardData = _card;
+    public float Height
+    {
+        get
+        {
+            return height;
+        }
+        set
+        {
+            height = value;
+            //RectTransform rt = go.GetComponent<RectTransform>();
+            //if (rt != null)
+            //{
+            //    rt.sizeDelta = new Vector2(Width, Height);
+            //}
+        }
+    } 
+    #endregion
+
+    #region Function
+    public void Move(Vector2 _newPos, float _speed, Action _action)
+    {
+        newPosition = _newPos;
+        MoveSpeed = _speed;
+        action = _action;
+        this.FormsUpdate = null;
+        this.FormsUpdate += this.Mover;
+    }
+
+    private void Mover()
+    {
+        Vector2 move_speed = (newPosition - Position);
+        move_speed.Normalize();
+        if (float.IsNaN(move_speed.x) || float.IsNaN(move_speed.y))
+        {
+            move_speed = Vector2.one;
+        }
+        //float move_time = MoveSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+        float move_time = MoveSpeed;
+        Vector2 move_distance = move_speed * move_time;
+        //Console.WriteLine(move_speed.ToString());
+        if ((Math.Abs(Position.x - newPosition.x) <= Math.Abs(move_distance.x))
+            && (Math.Abs(Position.y - newPosition.y) <= Math.Abs(move_distance.y)))
+        {
+            this.Position = newPosition;
+
+            MoveSpeed = 0f;
+            this.FormsUpdate -= this.Mover;
+            if (action != null)
+            {
+                action.Invoke();
+                action = null;
+            }
+            return;
+        }
+        float newX = this.Position.x + move_distance.x;
+        float newY = this.Position.y + move_distance.y;
+        this.Position = new Vector2(newX, newY);
+    } 
+    #endregion
+
+    #region Init & Update
+    public CardForm (Card _card, float x, float y, float width, float heigh)
+    {
+        this.CardData = _card;
 		texture = Resources.Load ("Cards/" + CardData.Asset)  as Texture2D;
-		Init ();
+        Init();
 		Position = new Vector2 (x, y);
 		Width = width;
-		Height = heigh;
-	}
+        Height = heigh;
+        //Init();
+    }
 
-	public void Init ()
-	{
-		Sprite dummy = Sprite.Create (texture, new Rect (0, 0, texture.width, texture.height), new Vector2 (0f, 0f));
-		GameObject mainPanel = GameObject.Find ("Hand Card Panel");
-		go = new GameObject (CardData.CardID.ToString ());
-		go.transform.SetParent (mainPanel.transform);
-		
-		//go.AddComponent(typeof(CardForm));
-		RectTransform rt = go.AddComponent<RectTransform> ();
-		rt.sizeDelta = new Vector2 (Width, Height);
-		rt.anchoredPosition = new Vector2 (Position.x, Position.y);
-		Image cv = go.AddComponent<Image> ();
-		cv.sprite = dummy;
+    public void Init()
+    {
+        Sprite dummy = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0f, 0f));
+        //GameObject mainPanel = GameObject.Find("Main Panel");
+        //go = new GameObject(CardData.CardID.ToString());
+        //go.transform.SetParent(mainPanel.transform);
+        go = GameObject.Find(CardData.CardID.ToString());
 
-		button = go.AddComponent<Button> ();
+        //go.AddComponent(typeof(CardFormScript));
+        RectTransform rt = go.AddComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(Width, Height);
+        rt.anchoredPosition = new Vector2(Position.x, Position.y);
+        Image cv = go.AddComponent<Image>();
+        cv.sprite = dummy;
 
-	}
+        button = go.AddComponent<Button>();
+    }
 
-	Vector2 newPosition = Vector2.zero;
-	float MoveSpeed = 0;
-	Action action;
-	public delegate void UpdateDelegate();
-	public UpdateDelegate FormsUpdate = null;
-	public void Move(Vector2 _newPos, float _speed, Action _action)
-	{
-		newPosition = _newPos;
-		MoveSpeed = _speed;
-		action = _action;
-		this.FormsUpdate = null;
-		this.FormsUpdate += this.Mover;
-	}
-
-	private void Mover()
-	{
-		Vector2 move_speed = (newPosition - Position);
-		move_speed.Normalize();
-		if (float.IsNaN(move_speed.x) || float.IsNaN(move_speed.y))
-		{
-			move_speed = Vector2.one;
-		}
-		//float move_time = MoveSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds;
-		float move_time = MoveSpeed;
-		Vector2 move_distance = move_speed * move_time;
-		//Console.WriteLine(move_speed.ToString());
-		if ((Math.Abs(Position.x - newPosition.x) <= Math.Abs(move_distance.x))
-		    && (Math.Abs(Position.y - newPosition.y) <= Math.Abs(move_distance.y)))
-		{
-			this.Position = newPosition;
-			
-			MoveSpeed = 0f;
-			this.FormsUpdate -= this.Mover;
-			if (action != null)
-			{
-				action.Invoke();
-				action = null;
-			}
-			return;
-		}
-		float newX = this.Position.x + move_distance.x;
-		float newY = this.Position.y + move_distance.y;
-		this.Position = new Vector2 (newX, newY);
-	}
-
-	public void Update ()
-	{
-		if (this.FormsUpdate != null)
-		{
-			FormsUpdate.Invoke();
-		}
-	}
+    public void Update()
+    {
+        RectTransform rt = go.GetComponent<RectTransform>();
+        if (rt != null)
+        {
+            rt.sizeDelta = new Vector2(Width, Height);
+            rt.anchoredPosition = Position;
+        }
+        if (this.FormsUpdate != null)
+        {
+            this.FormsUpdate.Invoke();
+        }
+    } 
+    #endregion
 }
 
 

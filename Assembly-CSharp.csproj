@@ -56,12 +56,12 @@
      <Compile Include="Assets\MyScript\Class\CommandSeal.cs" />
      <Compile Include="Assets\MyScript\Class\Dodge.cs" />
      <Compile Include="Assets\MyScript\Class\HolyGrail.cs" />
-     <Compile Include="Assets\MyScript\Class\Lancelot.cs" />
      <Compile Include="Assets\MyScript\Class\Player.cs" />
      <Compile Include="Assets\MyScript\Class\Servant.cs" />
      <Compile Include="Assets\MyScript\Class\Tool.cs" />
      <Compile Include="Assets\MyScript\Class\Vehicle.cs" />
      <Compile Include="Assets\MyScript\Class\Weapon.cs" />
+     <Compile Include="Assets\MyScript\Form\Lancelot.cs" />
      <Compile Include="Assets\MyScript\Game.cs" />
      <Compile Include="Assets\MyScript\Music.cs" />
      <Compile Include="Assets\MyScript\StartGame.cs" />
