@@ -10,48 +10,63 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 public class Game : MonoBehaviour
 {
-	Hashtable PlayerList = new Hashtable();
-	Hashtable CardInGame = new Hashtable();
-    GameObject mainPanel;
-	public Game()
-	{
-
-	}
+	public Hashtable PlayerList = new Hashtable();
+    public Hashtable CardInGame = new Hashtable();
+    public Hashtable GameObjList = new Hashtable();
+    public List<CardForm> CardList = new List<CardForm>();
+    public GameObject mainPanel;
+    public Player myPlayer;
+    public Player oppPlayer;
 
 	// Use this for initialization
 	void Start () {
-        
+        mainPanel = GameObject.Find("Main Panel");
+        myPlayer = new Player("AltimaZ");
+        oppPlayer = new Player("Cpu AI");
+        InitListCard();
 	}
 
 	// Update is called once per frame
 	void Update () {
-        //foreach (DictionaryEntry item in CardInGame) {
-        //    CardForm cf =(CardForm)item.Value;
-        //    if(cf.Visible)cf.Update();
-        //}
-        mainPanel = GameObject.Find("Main Panel");
+        foreach (CardForm cf in CardList)
+        {
+            cf.Update();
+        }
 	}
 
 	public void CreateCard()
 	{
-        GameObject go = new GameObject("Attack Card Form");
-        go.transform.SetParent(mainPanel.transform);
-        go.AddComponent(typeof(Attack));
-
-        //Card atkCard = new Card(Card.CardType.Basic, "Dodge", "Dodge", "Used to attack one player.",
-        //    Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.Hand, null);
-        //CardForm cf = new CardForm(atkCard, 0, 0, 500, 700);
+        System.Random rd = new System.Random();
+        List<CardForm> deck = CardList.GetDeckList();
+        int index = rd.Next(0, deck.Count - 1);
+        CardForm cf = deck[index];
+        cf.DrawFromDeck();
 	}
 
-    public static void MoveCard(CardForm cf)
-	{
-		//GameObject mainPanel = GameObject.Find ("Main Panel");
-        if (cf.Position.x == 0) cf.Move(new Vector2(-200, 0), 5, null);
-        else if (cf.Position.x == -200) cf.Move(new Vector2(0, 0), 5, null);
-	}
+    public void InitListCard()
+    {
+        //CardList = new List<CardForm>();
+        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, myPlayer, this));
+        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Five, Card.CardState.None, myPlayer, this));
+        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Four, Card.CardState.None, myPlayer, this));
+        CardList.Add(new Attack(Card.CardSuit.Diamond, Card.CardNumber.Jack, Card.CardState.None, myPlayer, this));
+        CardList.Add(new Attack(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, myPlayer, this));
+        CardList.Add(new Attack(Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.None, myPlayer, this));
+        CardList.Add(new Attack(Card.CardSuit.Diamond, Card.CardNumber.Ace, Card.CardState.None, myPlayer, this));
+        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Six, Card.CardState.None, myPlayer, this));
+        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, myPlayer, this));
+        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, myPlayer, this));
+
+        //foreach (CardForm cf in cardList)
+        //{
+        //    CardInGame.Add(cf.CardID, cf);
+        //}
+    }
 
     #region Function
     public static void CommandProcess(Command cm)
@@ -102,8 +117,58 @@ public class Game : MonoBehaviour
         {
             targetPlayer.CurrentHealth -= number;
         }
-    } 
+    }
+
+    public void DrawCard(GameObject go)
+    {
+        
+    }
     #endregion
+}
+
+public static class Extension
+{
+    public static object GetItemByIndex(this Hashtable list, int index)
+    {
+        int i = 0;
+        foreach (DictionaryEntry item in list)
+        {
+            if(i==index)
+            {
+                return item;
+            }
+            i++;
+        }
+        return null;
+    }
+
+    public static List<CardForm> GetHandList(this List<CardForm> list)
+    {
+        List<CardForm> hand = new List<CardForm>();
+        foreach (CardForm cf in list)
+        {
+            if(cf.Form.State == Card.CardState.Hand)
+            {
+                hand.Add(cf);
+            }
+        }
+        hand = hand.OrderBy(x => x.Form.LastInteract).ToList();
+        return hand;
+    }
+
+    public static List<CardForm> GetDeckList(this List<CardForm> list)
+    {
+        List<CardForm> hand = new List<CardForm>();
+        foreach (CardForm cf in list)
+        {
+            if (cf.Form.State == Card.CardState.None)
+            {
+                hand.Add(cf);
+            }
+        }
+        hand = hand.OrderBy(x => x.Form.LastInteract).ToList();
+        return hand;
+    }
 }
 
 

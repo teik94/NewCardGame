@@ -9,30 +9,31 @@
 //------------------------------------------------------------------------------
 using System;
 using UnityEngine;
-public class Attack: MonoBehaviour
+
+public class Attack: CardForm
 {
-    public CardForm Form;
+    public Attack(Card.CardSuit suit, Card.CardNumber number, Card.CardState state, Player owner, Game g)
+        : base(new Card(Card.CardType.Basic, "ATTACK", "attack1", "Used to attack one player.",
+        suit, number, state, owner),g)
+    {
+
+    }
+
     void Start()
     {
-        //this.CardData = new Card(global::Card.CardType.Basic, "ATTACK", asset,
-        //    "Used for attack any other player", suit, number, state, owner);
-        Card atkCard = new Card(Card.CardType.Basic, "ATTACK", "attack1", "Used to attack one player.", 
-            Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.Hand, null);
-        this.name = atkCard.CardID.ToString();
-        this.Form = new CardForm(atkCard, 0, 0, 50, 70);
-        //Form.onClick += Form_onClick;
+        //Card atkCard = new Card(Card.CardType.Basic, "ATTACK", "attack1", "Used to attack one player.", 
+        //    Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.Hand, null);
+        ////this.name = atkCard.CardID.ToString();
+        //this.Form = new CardForm(atkCard, 0, 0, 50, 70);
+        //this.Form.OnClick += OnMouseClick;
+        //this.Form.OnMouseMove += OnMouseMove;
+        //this.Form.OnMouseEnter += OnMouseEnter;
+        //this.Form.OnMouseLeave += OnMouseLeave;
     }
 
-    void OnMouseDown()
+    public void PerformAttack()
     {
-        Form.Height = 500;
-        Form.Width = 300;
-        //Form.Move(new Vector2(-100, -200), 5f, null);
-    }
-
-    void Update()
-    {
-        if(Form.Visible)Form.Update();
+        
     }
 }
 

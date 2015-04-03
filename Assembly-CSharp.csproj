@@ -49,6 +49,7 @@
      <Compile Include="Assets\MyScript\ChangeScene.cs" />
      <Compile Include="Assets\MyScript\Class\Attack.cs" />
      <Compile Include="Assets\MyScript\Class\Card.cs" />
+     <Compile Include="Assets\MyScript\Class\CardController.cs" />
      <Compile Include="Assets\MyScript\Class\CardForm.cs" />
      <Compile Include="Assets\MyScript\Class\Character.cs" />
      <Compile Include="Assets\MyScript\Class\Command.cs" />

@@ -58,6 +58,7 @@ public class Card
 		PendingDelay = 3,
 		OnCharacter1 = 4,
 		OnCharacter2 = 5,
+        Piles = 6,
 	}
 
 	public string Name;

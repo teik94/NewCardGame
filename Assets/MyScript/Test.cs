@@ -32,10 +32,12 @@ public class Test : MonoBehaviour {
 		//cv.fillCenter = true;
 		cv.sprite = dummy;
 
-
 	}
 
-
+    public void OnMouseEnter()
+    {
+        Debug.Log("Mouse enter");        
+    }
 	
 	// Update is called once per frame
 	void Update () {
