@@ -47,24 +47,25 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\MyScript\ChangeScene.cs" />
-     <Compile Include="Assets\MyScript\Class\Attack.cs" />
      <Compile Include="Assets\MyScript\Class\Card.cs" />
-     <Compile Include="Assets\MyScript\Class\CardController.cs" />
-     <Compile Include="Assets\MyScript\Class\CardForm.cs" />
      <Compile Include="Assets\MyScript\Class\Character.cs" />
      <Compile Include="Assets\MyScript\Class\Command.cs" />
      <Compile Include="Assets\MyScript\Class\CommandCode.cs" />
      <Compile Include="Assets\MyScript\Class\CommandSeal.cs" />
      <Compile Include="Assets\MyScript\Class\Dodge.cs" />
      <Compile Include="Assets\MyScript\Class\HolyGrail.cs" />
-     <Compile Include="Assets\MyScript\Class\Player.cs" />
      <Compile Include="Assets\MyScript\Class\Servant.cs" />
      <Compile Include="Assets\MyScript\Class\Tool.cs" />
      <Compile Include="Assets\MyScript\Class\Vehicle.cs" />
      <Compile Include="Assets\MyScript\Class\Weapon.cs" />
+     <Compile Include="Assets\MyScript\Form\Attack.cs" />
+     <Compile Include="Assets\MyScript\Form\CardController.cs" />
+     <Compile Include="Assets\MyScript\Form\CardForm.cs" />
      <Compile Include="Assets\MyScript\Form\Lancelot.cs" />
+     <Compile Include="Assets\MyScript\Form\Player.cs" />
      <Compile Include="Assets\MyScript\Game.cs" />
      <Compile Include="Assets\MyScript\Music.cs" />
+     <Compile Include="Assets\MyScript\PlayerForm.cs" />
      <Compile Include="Assets\MyScript\StartGame.cs" />
      <Compile Include="Assets\MyScript\Test.cs" />
  <Reference Include="UnityEngine.UI">

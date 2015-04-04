@@ -10,6 +10,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,48 +20,98 @@ public class Game : MonoBehaviour
     public Hashtable CardInGame = new Hashtable();
     public Hashtable GameObjList = new Hashtable();
     public List<CardForm> CardList = new List<CardForm>();
-    public GameObject mainPanel;
+    public GameObject mainPanel, mainPlayerPanel, playerPanel6, handPanel;
     public Player myPlayer;
     public Player oppPlayer;
+    public Player playerTurn;
+    private CardForm processingCard;
+    Text phase;
+
+    public CardForm ProcessingCard
+    {
+        get { return processingCard; }
+        set 
+        {
+            if (processingCard !=null) processingCard.Form.HasBorder = false;
+            processingCard = value;
+            if (processingCard != null)
+            {
+                btnCancel.SetActive(true);
+                btnUse.SetActive(true);
+                processingCard.Form.HasBorder = true;
+            }
+            else
+            {
+                btnCancel.SetActive(false);
+                btnUse.SetActive(false);
+            }
+        }
+    }
+    public GameObject btnUse, btnCancel;
 
 	// Use this for initialization
 	void Start () {
         mainPanel = GameObject.Find("Main Panel");
-        myPlayer = new Player("AltimaZ");
-        oppPlayer = new Player("Cpu AI");
+        mainPlayerPanel = GameObject.Find("MainPlayer Panel");
+        playerPanel6 = GameObject.Find("Player 6 Panel");
+        handPanel = GameObject.Find("Hand Card Panel");
+        btnUse = GameObject.Find("Use Button");
+        btnCancel = GameObject.Find("Cancel Button");
+        phase = gameObject.transform.FindChild("Phase").transform.FindChild("Text").GetComponent<Text>();
+        btnUse.SetActive(false);
+        btnCancel.SetActive(false);
+
         InitListCard();
+
+        myPlayer = mainPlayerPanel.GetComponent<Player>();
+        oppPlayer = playerPanel6.GetComponent<Player>();
+        oppPlayer.game = this;
+        myPlayer.game = this;
+        myPlayer.ChangePhase += ChangePhase;
+        oppPlayer.ChangePhase += ChangePhase;
+        myPlayer.DrawPhase += DrawCard;
+        oppPlayer.DrawPhase += DrawCard;
+        playerTurn = myPlayer;
+        playerTurn.Turn = Player.PlayerTurn.Beginning; 
 	}
 
 	// Update is called once per frame
 	void Update () {
+        if (playerTurn!=null) phase.text = playerTurn.GetPhase();
         foreach (CardForm cf in CardList)
         {
             cf.Update();
         }
+
 	}
 
-	public void CreateCard()
+	public void DrawCard()
 	{
         System.Random rd = new System.Random();
         List<CardForm> deck = CardList.GetDeckList();
         int index = rd.Next(0, deck.Count - 1);
         CardForm cf = deck[index];
-        cf.DrawFromDeck();
+        cf.DrawFromDeck(playerTurn);
 	}
+
+    public void Startgame()
+    {
+        playerTurn.Turn = Player.PlayerTurn.Beginning; 
+    }
 
     public void InitListCard()
     {
         //CardList = new List<CardForm>();
-        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, myPlayer, this));
-        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Five, Card.CardState.None, myPlayer, this));
-        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Four, Card.CardState.None, myPlayer, this));
-        CardList.Add(new Attack(Card.CardSuit.Diamond, Card.CardNumber.Jack, Card.CardState.None, myPlayer, this));
-        CardList.Add(new Attack(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, myPlayer, this));
-        CardList.Add(new Attack(Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.None, myPlayer, this));
-        CardList.Add(new Attack(Card.CardSuit.Diamond, Card.CardNumber.Ace, Card.CardState.None, myPlayer, this));
-        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Six, Card.CardState.None, myPlayer, this));
-        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, myPlayer, this));
-        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, myPlayer, this));
+        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Five, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Four, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Diamond, Card.CardNumber.Jack, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Diamond, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Six, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
 
         //foreach (CardForm cf in cardList)
         //{
@@ -68,6 +119,16 @@ public class Game : MonoBehaviour
         //}
     }
 
+    public void UseCard()
+    {
+        ProcessingCard.UseCard();
+        this.ProcessingCard = null;
+    }
+
+    public void Cancel()
+    {
+        
+    }
     #region Function
     public static void CommandProcess(Command cm)
     {
@@ -82,45 +143,59 @@ public class Game : MonoBehaviour
         }
     }
 
-    public void Heal(int number, Guid source, Guid target)
+    public void CancelProcessingCard()
     {
-        //Player sourcePlayer = (Player)PlayerList [source];
-        Player targetPlayer = (Player)PlayerList[target];
-        if (targetPlayer != null)
-        {
-            targetPlayer.CurrentHealth += number;
-        }
+        this.ProcessingCard = null;
+    }
+    public void Attack(int number, Player source, Player victim)
+    {
+        if (source.DamageCalculationModifier != null) number = source.DamageCalculationModifier.Invoke(number, source, victim);
+        if (source.BeforeAttack != null) source.BeforeAttack.Invoke(number, source, victim);
+        if (victim.BeforeAttacked != null) victim.BeforeAttacked.Invoke(number, source, victim);
+        if (victim.DamageCalculation != null) number = victim.DamageCalculation.Invoke(number, source, victim);
+        if (source.CauseDamage != null) source.CauseDamage.Invoke(number, source, victim);
+        if (victim.TakeDamage != null) victim.TakeDamage.Invoke(number, source, victim);
+
+        source.DamageCalculationModifier = null;
+        source.BeforeAttack = null;
+        source.BeforeAttack += source.beforeAttack;
+        victim.BeforeAttacked = null;
+        victim.BeforeAttacked += victim.beforeAttacked;
+        victim.DamageCalculation = null;
+        victim.DamageCalculation += victim.damageCalculation;
+        source.CauseDamage = null;
+        victim.TakeDamage = null;
+
     }
 
-    public void CausePhysicalDamage(int number, Guid source, Guid target)
-    {
-        Player targetPlayer = (Player)PlayerList[target];
-        if (targetPlayer != null)
-        {
-            targetPlayer.CurrentHealth -= number;
-        }
-    }
 
-    public void CauseMagicDamage(int number, Guid source, Guid target)
+    public void ChangePhase()
     {
-        Player targetPlayer = (Player)PlayerList[target];
-        if (targetPlayer != null)
+        //playerTurn = myPlayer;
+        if (playerTurn.Turn==Player.PlayerTurn.OutTurn) playerTurn.Turn = Player.PlayerTurn.Beginning;
+        else if (playerTurn.Turn == Player.PlayerTurn.Beginning) playerTurn.Turn = Player.PlayerTurn.Judgment;
+        else if (playerTurn.Turn == Player.PlayerTurn.Judgment) playerTurn.Turn = Player.PlayerTurn.Draw;
+        else if (playerTurn.Turn == Player.PlayerTurn.Draw) playerTurn.Turn = Player.PlayerTurn.Action;
+        else if (playerTurn.Turn == Player.PlayerTurn.Action) playerTurn.Turn = Player.PlayerTurn.Discard;
+        else if (playerTurn.Turn == Player.PlayerTurn.Discard) playerTurn.Turn = Player.PlayerTurn.End;
+        else if (playerTurn.Turn == Player.PlayerTurn.End)
         {
-            targetPlayer.CurrentHealth -= number;
-        }
-    }
+            playerTurn.Turn = Player.PlayerTurn.OutTurn;
 
-    public void LossOfHealth(int number, Guid source, Guid target)
-    {
-        Player targetPlayer = (Player)PlayerList[target];
-        if (targetPlayer != null)
-        {
-            targetPlayer.CurrentHealth -= number;
+            //Determine next player
+            if (playerTurn == myPlayer)
+            {
+                playerTurn = oppPlayer;
+                playerTurn.Turn = Player.PlayerTurn.Beginning;
+            }
+            else
+            {
+                playerTurn = myPlayer;
+                playerTurn.Turn = Player.PlayerTurn.Beginning;
+            }
         }
-    }
 
-    public void DrawCard(GameObject go)
-    {
+        
         
     }
     #endregion
@@ -142,12 +217,12 @@ public static class Extension
         return null;
     }
 
-    public static List<CardForm> GetHandList(this List<CardForm> list)
+    public static List<CardForm> GetHandList(this List<CardForm> list, Player player)
     {
         List<CardForm> hand = new List<CardForm>();
         foreach (CardForm cf in list)
         {
-            if(cf.Form.State == Card.CardState.Hand)
+            if(cf.Form.State == Card.CardState.Hand && cf.Form.Owner == player)
             {
                 hand.Add(cf);
             }

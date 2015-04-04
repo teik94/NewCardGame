@@ -31,10 +31,17 @@ public class CardController
     Vector2 newPosition = Vector2.zero;
     float MoveSpeed = 0;
     Action action;
-    public Rigidbody2D rb;
-    public RectTransform rt;
+    public Rigidbody2D RigidBody;
+    public RectTransform RectTrans;
     public float Order = 0.5f;
     public int Sorting = 1;
+    public Outline Border;
+    public Color HighlightColor;
+    private bool hasBorder = false;
+    private bool active;
+    public Sprite MainSprite;
+    public Sprite BackSprite;
+    public bool FaceUp = false;
 
     public delegate void UpdateDelegate();
     public UpdateDelegate FormsUpdate = null;
@@ -48,7 +55,7 @@ public class CardController
 
 
 
-    BoxCollider2D bc;
+    BoxCollider2D Collider;
     EventTrigger ev;
     #endregion
 
@@ -57,6 +64,33 @@ public class CardController
     {
         get { return go; }
         set { go = value; }
+    }
+
+    public bool Active
+    {
+        get { return active; }
+        set 
+        { 
+            active = value;
+            
+        }
+    }
+
+    public bool HasBorder
+    {
+        get { return hasBorder; }
+        set 
+        { 
+            hasBorder = value; 
+            if(hasBorder)
+            {
+                Border.effectDistance = new Vector2(2, -2);
+            }
+            else
+            {
+                Border.effectDistance = new Vector2(0, 0);
+            }
+        }
     }
 
     public Button Button
@@ -156,7 +190,7 @@ public class CardController
     public void UpdateLastInteract()
     {
         this.LastInteract = DateTime.Now;
-        
+        this.gameObject.transform.SetAsLastSibling();
     }
     #endregion
 
@@ -180,28 +214,33 @@ public class CardController
 
     public void Init()
     {
-        Sprite dummy = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0f, 0f));
+        Texture2D back = Resources.Load("Cards/Card Back") as Texture2D;
+        MainSprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0f, 0f));
+        BackSprite = Sprite.Create(back, new Rect(0, 0, back.width, back.height), new Vector2(0f, 0f));
         GameObject mainPanel = GameObject.Find("Main Panel");
         go = new GameObject(CardData.CardID.ToString());
         this.Sorting = mainPanel.transform.childCount + 1;
         go.transform.SetParent(mainPanel.transform);
-        bc = go.AddComponent<BoxCollider2D>();
-        bc.isTrigger = true;
-        bc.size = new Vector2(Width, Height);
-        rt = go.AddComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(Width, Height);
-        rt.anchoredPosition = new Vector2(Position.x, Position.y);
+        Collider = go.AddComponent<BoxCollider2D>();
+        Collider.isTrigger = true;
+        Collider.size = new Vector2(Width, Height);
+        RectTrans = go.AddComponent<RectTransform>();
+        RectTrans.sizeDelta = new Vector2(Width, Height);
+        RectTrans.anchoredPosition = new Vector2(Position.x, Position.y);
 
-        SpriteRenderer spirte = go.AddComponent<SpriteRenderer>();
+        Border = go.AddComponent<Outline>();
+        HighlightColor = Color.blue;
+        Border.effectColor = HighlightColor;
+        Border.effectDistance = new Vector2(0, 0);
         
         cv = go.AddComponent<Image>();
-        cv.sprite = dummy;
-        cv.canvas.sortingOrder = 1;
+        cv.sprite = BackSprite;
+        FaceUp = false;
         
-        rb = go.AddComponent<Rigidbody2D>();
+        RigidBody = go.AddComponent<Rigidbody2D>();
         //rb.gravityScale = 1;
 
-        go.SetActive(false);
+        this.Active = false;
 
         #region Event Registration
         EventTrigger eventTrigger = go.AddComponent<EventTrigger>();
@@ -247,21 +286,25 @@ public class CardController
     public void Update()
     {
         //RectTransform rt = go.GetComponent<RectTransform>();
-        if (rt != null)
+        if (RectTrans != null)
         {
-            rt.sizeDelta = new Vector2(Width, Height);
+            RectTrans.sizeDelta = new Vector2(Width, Height);
             //rt.transform.position = new Vector3(Position.x, Position.y, Order);
-            rt.anchoredPosition3D = new Vector3(Position.x, Position.y, Order);
-            this.gameObject.transform.SetSiblingIndex(Sorting);
+            RectTrans.anchoredPosition3D = new Vector3(Position.x, Position.y, Order);
+            //this.gameObject.transform.SetSiblingIndex(Sorting);
+            
             //rt.anchoredPosition = new Vector2(Position.x, Position.y);
         }
-        if (bc!=null)
+        if (Collider!=null)
         {
-            if (bc.size.x != this.width || bc.size.y != this.height)
+            if (Collider.size.x != this.width || Collider.size.y != this.height)
             {
-                bc.size = new Vector2(this.width, this.height);
+                Collider.size = new Vector2(this.width, this.height);
             }
         }
+        go.SetActive(active);
+        if (FaceUp) cv.sprite = MainSprite;
+        else cv.sprite = BackSprite;
         //this.width++;
         //this.height++;
         if (this.FormsUpdate != null)
