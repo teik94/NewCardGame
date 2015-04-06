@@ -25,7 +25,7 @@ public class CardController
     float width = 50;
     float height = 70;
     GameObject go;    
-    Button button;
+    NeoButton button;
     public bool Enable = true;
     public bool Visible = true;
     Vector2 newPosition = Vector2.zero;
@@ -93,7 +93,7 @@ public class CardController
         }
     }
 
-    public Button Button
+    public NeoButton Button
     {
         get
         {

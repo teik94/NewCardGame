@@ -85,6 +85,12 @@ public class Game : MonoBehaviour
 
 	}
 
+    public void OpenDialog()
+    {
+        Dialog dialog = new Dialog(this);
+        dialog.Open("Test");
+    }
+
 	public void DrawCard()
 	{
         System.Random rd = new System.Random();
@@ -157,6 +163,7 @@ public class Game : MonoBehaviour
         if (victim.TakeDamage != null) victim.TakeDamage.Invoke(number, source, victim);
 
         source.DamageCalculationModifier = null;
+        source.DamageCalculation += source.damageCalculationModifer;
         source.BeforeAttack = null;
         source.BeforeAttack += source.beforeAttack;
         victim.BeforeAttacked = null;
@@ -165,7 +172,6 @@ public class Game : MonoBehaviour
         victim.DamageCalculation += victim.damageCalculation;
         source.CauseDamage = null;
         victim.TakeDamage = null;
-
     }
 
 

@@ -46,6 +46,7 @@
 	</Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Extra GUI Skins\SkinTest.cs" />
      <Compile Include="Assets\MyScript\ChangeScene.cs" />
      <Compile Include="Assets\MyScript\Class\Card.cs" />
      <Compile Include="Assets\MyScript\Class\Character.cs" />
@@ -63,6 +64,9 @@
      <Compile Include="Assets\MyScript\Form\CardForm.cs" />
      <Compile Include="Assets\MyScript\Form\Lancelot.cs" />
      <Compile Include="Assets\MyScript\Form\Player.cs" />
+     <Compile Include="Assets\MyScript\GUI\Dialog.cs" />
+     <Compile Include="Assets\MyScript\GUI\NeoButton.cs" />
+     <Compile Include="Assets\MyScript\GUI\NeoWindow.cs" />
      <Compile Include="Assets\MyScript\Game.cs" />
      <Compile Include="Assets\MyScript\Music.cs" />
      <Compile Include="Assets\MyScript\PlayerForm.cs" />

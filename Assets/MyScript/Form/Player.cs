@@ -194,5 +194,11 @@ public class Player : MonoBehaviour
         }
         catch { }
     }
+
+    public virtual int damageCalculationModifer(int number, Player source, Player victim)
+    {
+
+        return number;
+    }
 }
 
