@@ -59,6 +59,7 @@ public class Card
 		OnCharacter1 = 4,
 		OnCharacter2 = 5,
         Piles = 6,
+        Using = 7,
 	}
 
 	public string Name;

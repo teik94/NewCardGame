@@ -16,50 +16,107 @@ using System.Linq;
 
 public class Game : MonoBehaviour
 {
-	public Hashtable PlayerList = new Hashtable();
+    public Hashtable PlayerList = new Hashtable();
     public Hashtable CardInGame = new Hashtable();
     public Hashtable GameObjList = new Hashtable();
     public List<CardForm> CardList = new List<CardForm>();
-    public GameObject mainPanel, mainPlayerPanel, playerPanel6, handPanel;
+    public GameObject mainPanel, mainPlayerPanel, playerPanel6, handPanel, tempPanel, characterPanel;
     public Player myPlayer;
     public Player oppPlayer;
     public Player playerTurn;
     private CardForm processingCard;
-    Text phase;
+    public GameObject btnUse, btnCancel;
+    Text phase, yourHealth;
+
+    public delegate void EventCustom();
+    public EventCustom CancelClick;
 
     public CardForm ProcessingCard
     {
         get { return processingCard; }
-        set 
+        set
         {
-            if (processingCard !=null) processingCard.Form.HasBorder = false;
+            if (processingCard != null) processingCard.Form.HasBorder = false;
             processingCard = value;
+            if (processingCard != null) processingCard.Form.HasBorder = true;
             if (processingCard != null)
             {
-                btnCancel.SetActive(true);
-                btnUse.SetActive(true);
-                processingCard.Form.HasBorder = true;
+                //btnCancel.SetActive(true);
+                if (processingCard is Attack)
+                {
+                    if (!processingCard.Form.Owner.MainAttack
+                        && processingCard.Form.Owner.actionState == Player.ActionState.Free)
+                    {
+                        btnUse.SetActive(true);
+                    }
+                    else
+                    {
+                        btnUse.SetActive(false);
+                    }
+                }
+                else if (processingCard is Dodge)
+                {
+                    if (processingCard.Form.Owner.actionState == Player.ActionState.WaitingDodge)
+                    {
+                        btnUse.SetActive(true);
+                    }
+                    else
+                    {
+                        btnUse.SetActive(false);
+                    }
+                }
+                else if (processingCard is HolyGrail)
+                {
+                    if (processingCard.Form.Owner.actionState == Player.ActionState.WaitingBoD)
+                    {
+                        btnUse.SetActive(true);
+                    }
+                    else if (processingCard.Form.Owner.actionState == Player.ActionState.Free
+                        && processingCard.Form.Owner.CurrentHealth < processingCard.Form.Owner.MaxHealth)
+                    {
+                        btnUse.SetActive(true);
+                    }
+                }
+                else if (processingCard is CommandSeal)
+                {
+                    if (processingCard.Form.Owner.actionState == Player.ActionState.WaitingBoD)
+                    {
+                        btnUse.SetActive(true);
+                    }
+                    else if (processingCard.Form.Owner.actionState == Player.ActionState.Free
+                        && !processingCard.Form.Owner.CommandSeal)
+                    {
+                        btnUse.SetActive(true);
+                    }
+                }
+                else
+                {
+                    btnUse.SetActive(false);
+                }
             }
             else
             {
-                btnCancel.SetActive(false);
+                //btnCancel.SetActive(false);
                 btnUse.SetActive(false);
             }
         }
     }
-    public GameObject btnUse, btnCancel;
 
-	// Use this for initialization
-	void Start () {
+    // Use this for initialization
+    void Start()
+    {
         mainPanel = GameObject.Find("Main Panel");
         mainPlayerPanel = GameObject.Find("MainPlayer Panel");
         playerPanel6 = GameObject.Find("Player 6 Panel");
+        characterPanel = GameObject.Find("Character Panel");
         handPanel = GameObject.Find("Hand Card Panel");
         btnUse = GameObject.Find("Use Button");
         btnCancel = GameObject.Find("Cancel Button");
+        tempPanel = GameObject.Find("Use Card Panel");
         phase = gameObject.transform.FindChild("Phase").transform.FindChild("Text").GetComponent<Text>();
         btnUse.SetActive(false);
         btnCancel.SetActive(false);
+        yourHealth = characterPanel.transform.FindChild("Health").transform.FindChild("Text").GetComponent<Text>();
 
         InitListCard();
 
@@ -67,42 +124,49 @@ public class Game : MonoBehaviour
         oppPlayer = playerPanel6.GetComponent<Player>();
         oppPlayer.game = this;
         myPlayer.game = this;
+
+        DrawCard(4, myPlayer);
+        DrawCard(4, oppPlayer);
+
         myPlayer.ChangePhase += ChangePhase;
         oppPlayer.ChangePhase += ChangePhase;
         myPlayer.DrawPhase += DrawCard;
         oppPlayer.DrawPhase += DrawCard;
         playerTurn = myPlayer;
-        playerTurn.Turn = Player.PlayerTurn.Beginning; 
-	}
 
-	// Update is called once per frame
-	void Update () {
-        if (playerTurn!=null) phase.text = playerTurn.GetPhase();
+        playerTurn.Turn = Player.PlayerTurn.Beginning;
+
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (playerTurn != null) phase.text = playerTurn.GetPhase();
+        if (yourHealth != null) yourHealth.text = myPlayer.CurrentHealth + "/" + myPlayer.MaxHealth;
         foreach (CardForm cf in CardList)
         {
             cf.Update();
         }
-
-	}
+    }
 
     public void OpenDialog()
     {
-        Dialog dialog = new Dialog(this);
-        dialog.Open("Test");
+
     }
 
-	public void DrawCard()
-	{
+    public void DrawCard()
+    {
+        DrawCard(2, playerTurn);
+    }
+
+    public void DrawCard(int number, Player player)
+    {
+        if (number == 0) return;
         System.Random rd = new System.Random();
         List<CardForm> deck = CardList.GetDeckList();
         int index = rd.Next(0, deck.Count - 1);
         CardForm cf = deck[index];
-        cf.DrawFromDeck(playerTurn);
-	}
-
-    public void Startgame()
-    {
-        playerTurn.Turn = Player.PlayerTurn.Beginning; 
+        cf.DrawFromDeck(number, player);
     }
 
     public void InitListCard()
@@ -119,6 +183,29 @@ public class Game : MonoBehaviour
         CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, null, this));
         CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
 
+        CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Four, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Club, Card.CardNumber.Two, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Ten, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
+
+        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+
+        CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal1", null, this));
+        CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal2", null, this));
+        CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal3", null, this));
+        CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal4", null, this));
+        CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal5", null, this));
+        CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal6", null, this));
         //foreach (CardForm cf in cardList)
         //{
         //    CardInGame.Add(cf.CardID, cf);
@@ -133,8 +220,25 @@ public class Game : MonoBehaviour
 
     public void Cancel()
     {
-        
+        btnCancel.SetActive(false);
+        if (CancelClick != null) CancelClick.Invoke();
     }
+
+    public virtual void PilesCollect()
+    {
+        System.Threading.Timer time = new System.Threading.Timer(delegate(object sender)
+        {
+            List<CardForm> usingCard = CardList.GetUsingList();
+            foreach (CardForm cf in usingCard)
+            {
+                cf.Form.State = Card.CardState.Piles;
+                cf.Form.CardData.State = Card.CardState.Piles;
+                cf.Form.Active = false;
+            }
+        });
+        time.Change(1000, 0);
+    }
+
     #region Function
     public static void CommandProcess(Command cm)
     {
@@ -153,32 +257,37 @@ public class Game : MonoBehaviour
     {
         this.ProcessingCard = null;
     }
+
     public void Attack(int number, Player source, Player victim)
     {
-        if (source.DamageCalculationModifier != null) number = source.DamageCalculationModifier.Invoke(number, source, victim);
+        if (source.AttackDamageModifier != null) number = source.AttackDamageModifier.Invoke(number, source, victim);
         if (source.BeforeAttack != null) source.BeforeAttack.Invoke(number, source, victim);
         if (victim.BeforeAttacked != null) victim.BeforeAttacked.Invoke(number, source, victim);
-        if (victim.DamageCalculation != null) number = victim.DamageCalculation.Invoke(number, source, victim);
-        if (source.CauseDamage != null) source.CauseDamage.Invoke(number, source, victim);
-        if (victim.TakeDamage != null) victim.TakeDamage.Invoke(number, source, victim);
 
-        source.DamageCalculationModifier = null;
-        source.DamageCalculation += source.damageCalculationModifer;
-        source.BeforeAttack = null;
-        source.BeforeAttack += source.beforeAttack;
-        victim.BeforeAttacked = null;
-        victim.BeforeAttacked += victim.beforeAttacked;
-        victim.DamageCalculation = null;
-        victim.DamageCalculation += victim.damageCalculation;
-        source.CauseDamage = null;
-        victim.TakeDamage = null;
+
+        //if (victim.DamageCalculation != null) number = victim.DamageCalculation.Invoke(number, source, victim);
+        //if (source.CauseDamage != null) source.CauseDamage.Invoke(number, source, victim);
+        //if (victim.TakeDamage != null) victim.TakeDamage.Invoke(number, source, victim);
+
+        //if (source.EndAttack != null) source.EndAttack.Invoke(number, source, victim);
+        //if (victim.EndAttack != null) victim.EndAttack.Invoke(number, source, victim);
+
+        //source.DamageCalculationModifier = null;
+        //source.DamageCalculation += source.damageCalculationModifer;
+        //source.BeforeAttack = null;
+        //source.BeforeAttack += source.beforeAttack;
+        //victim.BeforeAttacked = null;
+        //victim.BeforeAttacked += victim.beforeAttacked;
+        //victim.DamageCalculation = null;
+        //victim.DamageCalculation += victim.damageCalculation;
+        //source.CauseDamage = null;
+        //victim.TakeDamage = null;
     }
-
 
     public void ChangePhase()
     {
         //playerTurn = myPlayer;
-        if (playerTurn.Turn==Player.PlayerTurn.OutTurn) playerTurn.Turn = Player.PlayerTurn.Beginning;
+        if (playerTurn.Turn == Player.PlayerTurn.OutTurn) playerTurn.Turn = Player.PlayerTurn.Beginning;
         else if (playerTurn.Turn == Player.PlayerTurn.Beginning) playerTurn.Turn = Player.PlayerTurn.Judgment;
         else if (playerTurn.Turn == Player.PlayerTurn.Judgment) playerTurn.Turn = Player.PlayerTurn.Draw;
         else if (playerTurn.Turn == Player.PlayerTurn.Draw) playerTurn.Turn = Player.PlayerTurn.Action;
@@ -201,8 +310,8 @@ public class Game : MonoBehaviour
             }
         }
 
-        
-        
+
+
     }
     #endregion
 }
@@ -214,7 +323,7 @@ public static class Extension
         int i = 0;
         foreach (DictionaryEntry item in list)
         {
-            if(i==index)
+            if (i == index)
             {
                 return item;
             }
@@ -228,7 +337,7 @@ public static class Extension
         List<CardForm> hand = new List<CardForm>();
         foreach (CardForm cf in list)
         {
-            if(cf.Form.State == Card.CardState.Hand && cf.Form.Owner == player)
+            if (cf.Form.State == Card.CardState.Hand && cf.Form.Owner == player)
             {
                 hand.Add(cf);
             }
@@ -250,6 +359,21 @@ public static class Extension
         hand = hand.OrderBy(x => x.Form.LastInteract).ToList();
         return hand;
     }
+
+    public static List<CardForm> GetUsingList(this List<CardForm> list)
+    {
+        List<CardForm> usingList = new List<CardForm>();
+        foreach (CardForm cf in list)
+        {
+            if (cf.Form.State == Card.CardState.Using)
+            {
+                usingList.Add(cf);
+            }
+        }
+        usingList = usingList.OrderBy(x => x.Form.LastInteract).ToList();
+        return usingList;
+    }
+
 }
 
 

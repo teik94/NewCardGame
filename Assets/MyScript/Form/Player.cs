@@ -29,6 +29,10 @@ public class Player : MonoBehaviour
     public int PlusDistance = 0;
     private PlayerTurn turn = PlayerTurn.OutTurn;
     public bool AutoAI = false;
+    public bool MainAttack = false;
+    public bool CommandSeal = false;
+
+    public Player targetPlayer;
 
     public Game game;
     Text health, maxHealth, hand;
@@ -40,21 +44,44 @@ public class Player : MonoBehaviour
     public PhaseDelegate ActionPhase = null;
     public PhaseDelegate DiscardPhase = null;
     public PhaseDelegate EndPhase = null;
+    public PhaseDelegate OnWaitingAction = null;
 
     public delegate void EffectDelegate(int number, Player source, Player victim);
     public EffectDelegate BeforeAttack = null;
     public EffectDelegate BeforeAttacked = null;
-    public EffectDelegate TakeDamage = null;
-    public EffectDelegate CauseDamage = null;
+    public EffectDelegate TakeMagicDamage = null;
+    public EffectDelegate TakePhysicDamage = null;
+    public EffectDelegate CauseMagicDamage = null;
+    public EffectDelegate CausePhysicDamage = null;
     public EffectDelegate Healing = null;
+    public EffectDelegate AfterHealing = null;
     public EffectDelegate BrinkOfDeath = null;
-
-    public delegate int DamageModifierDelegate(int number, Player source, Player victim);
-    public DamageModifierDelegate DamageCalculationModifier = null;
-    public DamageModifierDelegate DamageCalculation = null;
+    public EffectDelegate EndAttack = null;
 
 
-    public PhaseDelegate OnWaitingAction = null;
+    public delegate int ModifierDelegate(int number, Player source, Player victim);
+    public ModifierDelegate AttackDamageModifier = null;
+    public ModifierDelegate DamageModifier = null;
+    public ModifierDelegate DamageCalculation = null;
+    public ModifierDelegate HealModifier = null;
+
+    public enum ActionState
+    {
+        None, Free, WaitingDodge, WaitingTool, WaitingRhoAias, WaitingBoD, WaitingSave
+    }
+
+    public enum PlayerTurn
+    {
+        Beginning = 0,
+        Judgment = 1,
+        Draw = 2,
+        Action = 3,
+        Discard = 4,
+        End = 5,
+        OutTurn = 6,
+    }
+
+    public ActionState actionState = ActionState.None;
 
     public PlayerTurn Turn
     {
@@ -79,6 +106,7 @@ public class Player : MonoBehaviour
             else if (turn == PlayerTurn.Action)
             {
                 if (ActionPhase != null) ActionPhase.Invoke();
+                this.actionState = ActionState.Free;
             }
             else if (turn == PlayerTurn.Discard)
             {
@@ -88,7 +116,10 @@ public class Player : MonoBehaviour
             {
                 if (EndPhase != null) EndPhase.Invoke();
             }
-
+            else if (turn == PlayerTurn.OutTurn)
+            {
+                MainAttack = false;
+            }
             if (turn != PlayerTurn.Action && turn != PlayerTurn.OutTurn)
             {
                 System.Threading.Timer time = new System.Threading.Timer(delegate(object sender)
@@ -98,23 +129,6 @@ public class Player : MonoBehaviour
                 time.Change(1000, 0);
             }
         }
-    }
- 
-    public enum PlayerTurn
-    {
-        Beginning = 0,
-        Judgment = 1,
-        Draw = 2,
-        Action = 3,
-        Discard = 4,
-        End = 5,
-        OutTurn = 6,
-    }
-
-    public Player(string name)
-    {
-        this.PlayerName = name;
-        PlayerID = Guid.NewGuid();
     }
 
     public string GetPhase()
@@ -129,9 +143,10 @@ public class Player : MonoBehaviour
         return "End Turn";
     }
 
+    #region Event Delegate
     public virtual int damageCalculation(int number, Player source, Player victim)
     {
-        if (victim.CurrentHealth>0) victim.CurrentHealth -= number;
+        if (victim.CurrentHealth > 0) victim.CurrentHealth -= number;
         else
         {
             if (victim.BrinkOfDeath != null) victim.BrinkOfDeath.Invoke(number, source, victim);
@@ -141,24 +156,109 @@ public class Player : MonoBehaviour
 
     public virtual void brinkOfDeath(int number, Player source, Player victim)
     {
-        
+        actionState = ActionState.WaitingBoD;
     }
 
-    public virtual void Heal(int number, Player source, Player victim)
+    public virtual void healing(int number, Player source, Player victim)
     {
-        if (Healing != null) Healing.Invoke(number, source, victim);
+        if (HealModifier != null) number = HealModifier.Invoke(number, source, victim);
         if (victim.CurrentHealth < victim.MaxHealth) victim.CurrentHealth += number;
+        if (AfterHealing != null) AfterHealing.Invoke(number, source, victim);
     }
 
     public virtual void beforeAttack(int number, Player source, Player victim)
     {
-        
+        actionState = ActionState.None;
+        targetPlayer = victim;
+        MainAttack = true;
     }
 
     public virtual void beforeAttacked(int number, Player source, Player victim)
     {
+        actionState = ActionState.WaitingDodge;
+        targetPlayer = source;
+        if (!AutoAI)
+        {
+            game.btnCancel.SetActive(true);
+            game.CancelClick += delegate()
+            {
+                if (victim.DamageCalculation != null) number = victim.DamageCalculation.Invoke(number, source, victim);
+                if (source.CauseMagicDamage != null) source.CauseMagicDamage.Invoke(number, source, victim);
+                if (victim.TakeMagicDamage != null) victim.TakeMagicDamage.Invoke(number, source, victim);
+                if (source.EndAttack != null) source.EndAttack.Invoke(number, source, victim);
+                if (victim.EndAttack != null) victim.EndAttack.Invoke(number, source, victim);
+            };
+        }
+        else
+        {
+            List<CardForm> hand = game.CardList.GetHandList(this);
+            foreach (CardForm cf in hand)
+            {
+                if (cf is Dodge)
+                {
+                    Dodge dodge = cf as Dodge;
+                    dodge.UseCard();
+
+                    return;
+                }
+            }
+            if (victim.DamageCalculation != null) number = victim.DamageCalculation.Invoke(number, source, victim);
+            if (source.CauseMagicDamage != null) source.CauseMagicDamage.Invoke(number, source, victim);
+            if (victim.TakeMagicDamage != null) victim.TakeMagicDamage.Invoke(number, source, victim);
+            if (source.EndAttack != null) source.EndAttack.Invoke(number, source, victim);
+            if (victim.EndAttack != null) victim.EndAttack.Invoke(number, source, victim);
+        }
+    }
+
+    public virtual void endAttack(int number, Player source, Player victim)
+    {
+        targetPlayer = null;
+        if (turn == PlayerTurn.Action)
+        {
+            actionState = ActionState.Free;
+        }
+        else
+        {
+            actionState = ActionState.None;
+        }
+    }
+
+    public virtual void afterHealing(int number, Player source, Player victim)
+    {
 
     }
+
+    public virtual int attackDamageModifier(int number, Player source, Player victim)
+    {
+        if (CommandSeal) number = number + 1;
+        return number;
+    }
+
+    public virtual int damageModifier(int number, Player source, Player victim)
+    {
+        return number;
+    }
+
+    public virtual void takeMagicDamage(int number, Player source, Player victim)
+    {
+        
+    }
+
+    public virtual void causeMagicDamage(int number, Player source, Player victim)
+    {
+
+    }
+
+    public virtual void takePhysicDamage(int number, Player source, Player victim)
+    {
+
+    }
+
+    public virtual void causePhysicDamage(int number, Player source, Player victim)
+    {
+
+    }
+    #endregion
 
     void Start()
     {
@@ -168,13 +268,24 @@ public class Player : MonoBehaviour
             health = gameObject.transform.FindChild("Health").transform.FindChild("Text").GetComponent<Text>();
             maxHealth = gameObject.transform.FindChild("MaxHealth").transform.FindChild("Text").GetComponent<Text>();
             hand = gameObject.transform.FindChild("Hand").transform.FindChild("Text").GetComponent<Text>();
-            this.Healing += Heal;
-            this.BrinkOfDeath += brinkOfDeath;
-            this.DamageCalculation += damageCalculation;
-            this.BeforeAttack += beforeAttack;
-            this.BeforeAttacked += beforeAttacked;
         }
-        catch { }
+        catch(Exception e) {
+            Debug.Log(e.ToString());
+        }
+
+        this.Healing += healing;
+        this.AfterHealing += afterHealing;
+        this.BrinkOfDeath += brinkOfDeath;
+        this.AttackDamageModifier += attackDamageModifier;
+        this.DamageCalculation += damageCalculation;
+        this.BeforeAttack += beforeAttack;
+        this.BeforeAttacked += beforeAttacked;
+        this.EndAttack += endAttack;
+        this.TakeMagicDamage += takeMagicDamage;
+        this.TakePhysicDamage += takePhysicDamage;
+        this.CauseMagicDamage += causeMagicDamage;
+        this.CausePhysicDamage += causePhysicDamage;
+        this.DamageModifier += damageModifier;
     }
 
     void Update()
@@ -194,11 +305,6 @@ public class Player : MonoBehaviour
         }
         catch { }
     }
-
-    public virtual int damageCalculationModifer(int number, Player source, Player victim)
-    {
-
-        return number;
-    }
+    
 }
 

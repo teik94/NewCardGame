@@ -53,8 +53,6 @@ public class CardController
     public EventDelegate OnMouseLeave = null;
     public EventDelegate OnMouseMove = null;
 
-
-
     BoxCollider2D Collider;
     EventTrigger ev;
     #endregion
@@ -84,7 +82,8 @@ public class CardController
             hasBorder = value; 
             if(hasBorder)
             {
-                Border.effectDistance = new Vector2(2, -2);
+                Border.effectDistance = new Vector2(4, -4);
+                
             }
             else
             {
@@ -229,12 +228,16 @@ public class CardController
         RectTrans.anchoredPosition = new Vector2(Position.x, Position.y);
 
         Border = go.AddComponent<Outline>();
+        Border.useGraphicAlpha = false;
         HighlightColor = Color.blue;
         Border.effectColor = HighlightColor;
         Border.effectDistance = new Vector2(0, 0);
-        
+
+        //MainSprite.border.Set(3, 3, 3, 3);
+        //BackSprite.border.Set(3, 3, 3, 3);
         cv = go.AddComponent<Image>();
         cv.sprite = BackSprite;
+        //cv.type = Image.Type.Sliced;
         FaceUp = false;
         
         RigidBody = go.AddComponent<Rigidbody2D>();
@@ -302,11 +305,9 @@ public class CardController
                 Collider.size = new Vector2(this.width, this.height);
             }
         }
-        go.SetActive(active);
+        if (go.activeSelf != Active) go.SetActive(Active);
         if (FaceUp) cv.sprite = MainSprite;
         else cv.sprite = BackSprite;
-        //this.width++;
-        //this.height++;
         if (this.FormsUpdate != null)
         {
             this.FormsUpdate.Invoke();

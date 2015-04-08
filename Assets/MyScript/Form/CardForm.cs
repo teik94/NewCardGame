@@ -25,7 +25,7 @@ public class CardForm
         this.Form.OnMouseLeave += OnMouseLeave;
     }
 
-    public virtual void DrawFromDeck(Player player)
+    public virtual void DrawFromDeck(int number, Player player)
     {
         if (player == game.myPlayer)
         {
@@ -36,16 +36,18 @@ public class CardForm
             if (this.Form == null) Debug.Log("card form null");
             else
             {
+                this.Form.UpdateLastInteract();
                 this.Form.Active = true;
                 this.Form.Owner = player;
                 this.Form.FaceUp = true;
+                this.Form.CardData.State = Card.CardState.Hand;
+                this.Form.State = Card.CardState.Hand;
                 Vector3 position = handPanel.transform.localPosition;
                 Action action = delegate()
                 {
-                    this.Form.UpdateLastInteract();
-                    this.Form.CardData.State = Card.CardState.Hand;
-                    this.Form.State = Card.CardState.Hand;
                     RefreshHand(game.myPlayer);
+                    number -= 1;
+                    game.DrawCard(number, player);
                 };
                 this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
             }
@@ -56,12 +58,14 @@ public class CardForm
             this.Form.Active = true;
             this.Form.Owner = player;
             this.Form.FaceUp = false;
+            this.Form.UpdateLastInteract();
+            this.Form.CardData.State = Card.CardState.Hand;
+            this.Form.State = Card.CardState.Hand;
             Vector3 position = playerPanel.transform.localPosition;
             Action action = delegate()
             {
-                this.Form.UpdateLastInteract();
-                this.Form.CardData.State = Card.CardState.Hand;
-                this.Form.State = Card.CardState.Hand;
+                number -= 1;
+                game.DrawCard(number, player);
                 System.Threading.Timer time = new System.Threading.Timer(delegate(object sender)
                 {
                     this.Form.Active = false;
@@ -88,18 +92,18 @@ public class CardForm
         if (handWidth < maxHandWidth)
         {
             float order = 0.5f;
-            int sorting = 17 ;
+            int sorting = 17;
             for (int i = 0; i < handList.Count; i++)
             {
                 order = order + 0.1f;
                 sorting++;
-                float newX = position.x - (handWidth / 2) + (cardWidth/2)+3;
+                float newX = position.x - (handWidth / 2) + (cardWidth / 2) + 3;
                 float newY = handList[0].Form.Position.y;
                 newX = newX + ((cardWidth + padding) * i);
                 //handList[i].Form.Sorting = sorting;
                 //handList[i].Form.UpdateLastInteract();
                 handList[i].Form.Move(new Vector2(newX, newY), MoveSpeed, null);
-                
+
                 //handList[i].Form.Position = new Vector2(newX, newY);
             }
         }
@@ -124,16 +128,69 @@ public class CardForm
         }
     }
 
+    public Action mainAction = null;
     public virtual void UseCard()
     {
-        
+        Vector3 position = game.tempPanel.transform.localPosition;
+        if (this.Form.Owner == game.myPlayer)
+        {
+            game.btnCancel.SetActive(false);
+            game.CancelClick = null;
+        }
+        this.Form.Active = true;
+        Action action = delegate()
+        {
+            this.Form.UpdateLastInteract();
+            this.Form.Owner = null;
+            this.Form.FaceUp = true;
+            this.Form.CardData.State = Card.CardState.Using;
+            this.Form.State = Card.CardState.Using;
+            RefreshPiles();
+            RefreshHand(game.myPlayer);
+            mainAction.Invoke();
+        };
+        this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
     }
-    
+
+    public virtual void RefreshPiles()
+    {
+        float padding = 3;
+        float cardWidth = this.Form.Width;
+        float cardHeight = this.Form.Height;
+        List<CardForm> usingCard = game.CardList.GetUsingList();
+        float pileWidth = usingCard.Count * (cardWidth + padding);
+        RectTransform rt = game.tempPanel.GetComponent<RectTransform>();
+        float maxPileWidth = rt.GetWidth();
+        Vector3 position = game.tempPanel.transform.localPosition;
+        if (pileWidth < maxPileWidth)
+        {
+            for (int i = 0; i < usingCard.Count; i++)
+            {
+                float newX = position.x - (pileWidth / 2) + (cardWidth / 2) + 3;
+                float newY = position.y;
+                newX = newX + ((cardWidth + padding) * i);
+                usingCard[i].Form.Move(new Vector2(newX, newY), MoveSpeed, null);
+            }
+        }
+        else
+        {
+            float newpadding = (pileWidth - maxPileWidth) / usingCard.Count;
+            float handWidth2 = usingCard.Count * (cardWidth - newpadding);
+            for (int i = 0; i < usingCard.Count; i++)
+            {
+                float newX = position.x - (handWidth2 / 2) + ((cardWidth - newpadding) / 2);
+                float newY = position.y;
+                newX = newX + ((cardWidth - newpadding) * i);
+                usingCard[i].Form.Move(new Vector2(newX, newY), MoveSpeed, null);
+            }
+        }
+    }
+
 
     #region Handler
     public virtual void OnMouseClick()
     {
-        if(this.Form.Owner == game.myPlayer)game.ProcessingCard = this;
+        if (this.Form.Owner == game.myPlayer) game.ProcessingCard = this;
     }
     public virtual void OnMouseEnter()
     {
@@ -154,7 +211,7 @@ public class CardForm
 
     public virtual void Update()
     {
-        if(this.Form.Visible)this.Form.Update();
+        if (this.Form.Visible) this.Form.Update();
     }
 }
 
