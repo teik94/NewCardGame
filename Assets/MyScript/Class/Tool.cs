@@ -8,9 +8,11 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 using System;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-[Serializable]
-public class Tool: Card
+public class Tool : CardForm
 {
 	public enum ToolType
 	{
@@ -19,9 +21,9 @@ public class Tool: Card
 	}
 	public ToolType Type = ToolType.TimeDelay;
 
-	public Tool (string name, string asset, string description,
-	             CardSuit suit, CardNumber number, CardState state, ToolType type, Player owner): 
-		base (Card.CardType.Tool, name, asset, description, suit, number, state, owner)
+	public Tool (string name, string asset, string ability, Card.CardSuit suit, 
+        Card.CardNumber number, Card.CardState state, ToolType type, Player owner, Game g):
+        base(new Card(Card.CardType.Tool, name, asset, ability, suit, number, state, owner), g)
 	{
 		this.Type = type;
 	}
@@ -30,15 +32,20 @@ public class Tool: Card
 	{
 		base.UseCard ();
 	}
+
+    public virtual void TimeDelayEffect()
+    {
+        
+    }
+
+    public virtual void NonTimeDelayEffect()
+    {
+
+    }
 	
-	public override void Discard ()
+	public virtual void Exchange ()
 	{
-		base.Discard ();
-	}
-	
-	public override void Exchange ()
-	{
-		base.Exchange ();
+		
 	}
 }
 

@@ -20,9 +20,13 @@ public class Game : MonoBehaviour
     public Hashtable CardInGame = new Hashtable();
     public Hashtable GameObjList = new Hashtable();
     public List<CardForm> CardList = new List<CardForm>();
-    public GameObject mainPanel, mainPlayerPanel, playerPanel6, handPanel, tempPanel, characterPanel;
+    public GameObject mainPanel, mainPlayerPanel, handPanel, tempPanel, characterPanel;
+    public GameObject playerPanel6, playerPanel1, playerPanel2, playerPanel3, playerPanel4, playerPanel5;
+    public GameObject playerPanel7, playerPanel8, playerPanel9, playerPanel10, playerPanel11;
+    public GameObject equipmentPanel;
     public Player myPlayer;
     public Player oppPlayer;
+    List<Player> playerList = new List<Player>();
     public Player playerTurn;
     private CardForm processingCard;
     public GameObject btnUse, btnCancel;
@@ -89,6 +93,16 @@ public class Game : MonoBehaviour
                         btnUse.SetActive(true);
                     }
                 }
+                else if (processingCard.Form.CardData.Type == Card.CardType.Weapon ||
+                    processingCard.Form.CardData.Type == Card.CardType.Armor ||
+                    processingCard.Form.CardData.Type == Card.CardType.MinusVehicle ||
+                    processingCard.Form.CardData.Type == Card.CardType.PlusVehicle)
+                {
+                    if (processingCard.Form.Owner.actionState == Player.ActionState.Free)
+                    {
+                        btnUse.SetActive(true);
+                    }
+                }
                 else
                 {
                     btnUse.SetActive(false);
@@ -105,37 +119,76 @@ public class Game : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        //Setup Global Game Variable
         mainPanel = GameObject.Find("Main Panel");
         mainPlayerPanel = GameObject.Find("MainPlayer Panel");
+        playerPanel1 = GameObject.Find("Player 1 Panel");
+        playerPanel2 = GameObject.Find("Player 2 Panel");
+        playerPanel3 = GameObject.Find("Player 3 Panel");
+        playerPanel4 = GameObject.Find("Player 4 Panel");
+        playerPanel5 = GameObject.Find("Player 5 Panel");
         playerPanel6 = GameObject.Find("Player 6 Panel");
+        playerPanel7 = GameObject.Find("Player 7 Panel");
+        playerPanel8 = GameObject.Find("Player 8 Panel");
+        playerPanel9 = GameObject.Find("Player 9 Panel");
+        playerPanel10 = GameObject.Find("Player 10 Panel");
+        playerPanel11 = GameObject.Find("Player 11 Panel");
         characterPanel = GameObject.Find("Character Panel");
         handPanel = GameObject.Find("Hand Card Panel");
         btnUse = GameObject.Find("Use Button");
         btnCancel = GameObject.Find("Cancel Button");
         tempPanel = GameObject.Find("Use Card Panel");
+        equipmentPanel = GameObject.Find("Equipment Panel");
         phase = gameObject.transform.FindChild("Phase").transform.FindChild("Text").GetComponent<Text>();
         btnUse.SetActive(false);
         btnCancel.SetActive(false);
         yourHealth = characterPanel.transform.FindChild("Health").transform.FindChild("Text").GetComponent<Text>();
 
+        //Initilizing All Deck Cards
         InitListCard();
 
+        List<Player> temp = new List<Player>();
         myPlayer = mainPlayerPanel.GetComponent<Player>();
-        oppPlayer = playerPanel6.GetComponent<Player>();
-        oppPlayer.game = this;
         myPlayer.game = this;
+        temp.Add(mainPlayerPanel.GetComponent<Player>());
+        temp.Add(playerPanel1.GetComponent<Player>());
+        temp.Add(playerPanel2.GetComponent<Player>());
+        temp.Add(playerPanel3.GetComponent<Player>());
+        temp.Add(playerPanel4.GetComponent<Player>());
+        temp.Add(playerPanel5.GetComponent<Player>());
+        temp.Add(playerPanel6.GetComponent<Player>());
+        temp.Add(playerPanel7.GetComponent<Player>());
+        temp.Add(playerPanel8.GetComponent<Player>());
+        temp.Add(playerPanel9.GetComponent<Player>());
+        temp.Add(playerPanel10.GetComponent<Player>());
+        temp.Add(playerPanel11.GetComponent<Player>());
 
-        DrawCard(4, myPlayer);
-        DrawCard(4, oppPlayer);
+        foreach (Player p in temp)
+        {
+            if (p.Status)
+            {
+                p.game = this;
+                DrawXCard(4, p);
+                playerList.Add(p);
+            }
+            else
+            {
+                p.gameObject.SetActive(false);
+            }
+        }
 
-        myPlayer.ChangePhase += ChangePhase;
-        oppPlayer.ChangePhase += ChangePhase;
-        myPlayer.DrawPhase += DrawCard;
-        oppPlayer.DrawPhase += DrawCard;
+        //Draw 4 cards starting for each player
+        //DrawXCard(4, myPlayer);
+        //DrawXCard(4, oppPlayer);
+
+        //myPlayer.DrawPhase += DrawCard;
+        //myPlayer.ChangePhase += ChangePhase;
+        //oppPlayer.DrawPhase += DrawCard;
+        //oppPlayer.ChangePhase += ChangePhase;
+
+        //Determine who goes first
         playerTurn = myPlayer;
-
         playerTurn.Turn = Player.PlayerTurn.Beginning;
-
     }
 
     // Update is called once per frame
@@ -156,10 +209,10 @@ public class Game : MonoBehaviour
 
     public void DrawCard()
     {
-        DrawCard(2, playerTurn);
+        DrawXCard(2, playerTurn);
     }
 
-    public void DrawCard(int number, Player player)
+    public void DrawXCard(int number, Player player)
     {
         if (number == 0) return;
         System.Random rd = new System.Random();
@@ -171,7 +224,6 @@ public class Game : MonoBehaviour
 
     public void InitListCard()
     {
-        //CardList = new List<CardForm>();
         CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
         CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Five, Card.CardState.None, null, this));
         CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Four, Card.CardState.None, null, this));
@@ -183,33 +235,42 @@ public class Game : MonoBehaviour
         CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, null, this));
         CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
 
-        CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Four, Card.CardState.None, null, this));
-        CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Ace, Card.CardState.None, null, this));
-        CardList.Add(new Dodge(Card.CardSuit.Club, Card.CardNumber.Two, Card.CardState.None, null, this));
-        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Queen, Card.CardState.None, null, this));
-        CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Seven, Card.CardState.None, null, this));
-        CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Ten, Card.CardState.None, null, this));
-        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
+        CardList.Add(new BerserCar(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new GaeBuidhe(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new GilgameshArmor(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Hrunting(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new KanshouBakuya(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Monohoshizao(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Pegasus(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Vimana(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new YamahaVmax(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new PrelatiSpellbook(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Avalon(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new SaberArmor(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
 
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Four, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Club, Card.CardNumber.Two, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Ten, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
 
-        CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal1", null, this));
-        CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal2", null, this));
-        CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal3", null, this));
-        CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal4", null, this));
-        CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal5", null, this));
-        CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal6", null, this));
-        //foreach (CardForm cf in cardList)
-        //{
-        //    CardInGame.Add(cf.CardID, cf);
-        //}
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+
+        //CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal1", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal2", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal3", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal4", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal5", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal6", null, this));
     }
 
     public void UseCard()

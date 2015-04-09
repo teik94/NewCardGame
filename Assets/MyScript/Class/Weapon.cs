@@ -8,33 +8,41 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 using System;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-[Serializable]
-public class Weapon: Card
+public class Weapon : CardForm
 {
 	public int Range = 0;
 
-	public Weapon (string name, string asset, string description,
-	             CardSuit suit, CardNumber number, CardState state, int range, Player owner): 
-		base (Card.CardType.Tool, name, asset, description, suit, number, state, owner)
-	{
+    public Weapon(string name, string asset, string ability, int range, Card.CardSuit suit, 
+        Card.CardNumber number, Card.CardState state, Player owner, Game g)
+        : base(new Card(Card.CardType.Weapon, name, asset, ability, suit, number, state, owner), g)
+    {
 		this.Range = range;
 	}
 
-	public override void UseCard ()
-	{
-		base.UseCard ();
-	}
+    public override void Equipped()
+    {
+        this.Form.Owner.AttackingRange += Range;
+    }
 
-	public override void Discard ()
-	{
-		base.Discard ();
-	}
+    public override void UnEquipped()
+    {
+        this.Form.Owner.AttackingRange -= Range;
+        if (this.Form.Owner.AttackingRange < 1) this.Form.Owner.AttackingRange = 1;
+    }
 
-	public override void Exchange ()
-	{
-		base.Exchange ();
-	}
+	public virtual void Ability()
+    {
+        
+    }
+
+    public override void UseCard()
+    {
+        EquipAnimation();
+    }
 }
 
 

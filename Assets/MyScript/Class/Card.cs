@@ -44,10 +44,10 @@ public class Card
 	{
 		Tool = 0,
 		Weapon = 1,
-		Vehicle = 2,
-		Basic = 3,
-		Armor = 4,
-
+		PlusVehicle = 2,
+        MinusVehicle = 3,
+		Basic = 4,
+		Armor = 5,
 	}
 
 	public enum CardState
