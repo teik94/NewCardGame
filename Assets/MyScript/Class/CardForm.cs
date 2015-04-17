@@ -5,6 +5,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using System.Collections;
 
 public class CardForm
 {
@@ -12,6 +13,20 @@ public class CardForm
     public Guid CardID;
     public Game game;
     public float MoveSpeed = 1500f;
+
+    public delegate IEnumerator CardEffectDelete(int number, Player source, Player victim);
+    public CardEffectDelete AttackAction = null;
+    public CardEffectDelete DodgeAction = null;
+    public CardEffectDelete CauseMagicDamage = null;
+    public CardEffectDelete CausePhysicDamage = null;
+    public CardEffectDelete TakeMagicDamage = null;
+    public CardEffectDelete TakePhysicDamage = null;
+    public CardEffectDelete DamageIncrease = null;
+    public CardEffectDelete DamageDecrease = null;
+    public CardEffectDelete DrawCard = null;
+    public CardEffectDelete Heal = null;
+
+    
     public CardForm(Card card, Game g)
     {
         //Card atkCard = new Card(Card.CardType.Basic, "ATTACK", "attack1", "Used to attack one player.",
@@ -25,13 +40,14 @@ public class CardForm
         this.Form.OnMouseLeave += OnMouseLeave;
     }
 
+    #region Animation
     public virtual void DrawFromDeck(int number, Player player)
     {
         if (player == game.myPlayer)
         {
             GameObject handPanel = game.handPanel;
             //GameObject mainPanel = GameObject.Find("MainPlayer Panel");
-            RectTransform rt = handPanel.GetComponent<RectTransform>();
+            //RectTransform rt = handPanel.GetComponent<RectTransform>();
             if (handPanel == null) Debug.Log("hand panel null");
             if (this.Form == null) Debug.Log("card form null");
             else
@@ -54,7 +70,7 @@ public class CardForm
         }
         else
         {
-            GameObject playerPanel = game.playerPanel6;
+            GameObject playerPanel = player.gameObject;
             this.Form.Active = true;
             this.Form.Owner = player;
             this.Form.FaceUp = false;
@@ -84,7 +100,7 @@ public class CardForm
         RectTransform rt = hand.GetComponent<RectTransform>();
         float padding = 3;
         float cardWidth = this.Form.Width;
-        float cardHeight = this.Form.Height;
+        //float cardHeight = this.Form.Height;
         float maxHandWidth = rt.GetWidth();
         float handWidth = handList.Count * (cardWidth + padding);
         Vector3 position = hand.transform.localPosition;
@@ -131,9 +147,15 @@ public class CardForm
     public virtual void Discard()
     {
         Vector3 position = game.tempPanel.transform.localPosition;
+        Player owner = this.Form.Owner;
         this.Form.Active = true;
+        if(this.Form.State == Card.CardState.Equipment)
+        {
+            owner.DiscardEquipment(this);
+        }
         Action action = delegate()
         {
+            owner = this.Form.Owner;
             this.Form.UpdateLastInteract();
             this.Form.Owner = null;
             this.Form.FaceUp = true;
@@ -141,7 +163,8 @@ public class CardForm
             this.Form.State = Card.CardState.Using;
             RefreshPiles();
             RefreshHand(game.myPlayer);
-            game.PilesCollect();
+            if (owner.Discard != null) owner.StartCoroutine(owner.Discard());
+            if (game.GetBusyTask() <0) game.PilesCollect();
             //mainAction.Invoke();
         };
         this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
@@ -167,7 +190,7 @@ public class CardForm
         {
             equipObject = user.MinusVehicle;
         }
-
+        
         if (equipObject != null)
         {
             equipObject.SetActive(true);
@@ -175,19 +198,47 @@ public class CardForm
             if (equip.Form != null)
             {
                 equip.Form.GetType().GetMethod("Discard").Invoke(equip.Form, null);
-            }           
+                //equip.Form.GetType().GetMethod("UnEquipped").Invoke(equip.Form, null);
+            }
+            equipObject.SetActive(true);
             equip.Form = this;
 
-            //equip.Form.GetType().GetMethod("Equipped").Invoke(equip.Form, null);
+            equip.Form.GetType().GetMethod("Equipped").Invoke(equip.Form, null);
             this.Form.UpdateLastInteract();
             this.Form.FaceUp = true;
             this.Form.CardData.State = Card.CardState.Equipment;
             this.Form.State = Card.CardState.Equipment;
 
             if (user == game.myPlayer) this.Form.Position = game.equipmentPanel.transform.localPosition;
+            else
+            {
+                this.Form.Position = user.gameObject.transform.localPosition;
+            }
             this.Form.Active = false;
             RefreshHand(game.myPlayer);
         }
+    }
+
+    public void UseEquipEffect()
+    {
+        this.GetType().GetMethod("Ability").Invoke(this, null);
+    }
+
+    public virtual void DoJudgment(Action action)
+    {
+        Vector3 position = game.tempPanel.transform.localPosition;
+        this.Form.Active = true;
+        Action action2 = delegate()
+        {
+            this.Form.UpdateLastInteract();
+            this.Form.Owner = null;
+            this.Form.FaceUp = true;
+            this.Form.CardData.State = Card.CardState.Using;
+            this.Form.State = Card.CardState.Using;
+            RefreshPiles();
+            action.Invoke();
+        };
+        this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action2);
     }
 
     public Action mainAction = null;
@@ -209,7 +260,7 @@ public class CardForm
             this.Form.State = Card.CardState.Using;
             RefreshPiles();
             RefreshHand(game.myPlayer);
-            mainAction.Invoke();
+            if (mainAction!=null) mainAction.Invoke();
             mainAction = null;
         };
         this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
@@ -219,7 +270,7 @@ public class CardForm
     {
         float padding = 3;
         float cardWidth = this.Form.Width;
-        float cardHeight = this.Form.Height;
+        //float cardHeight = this.Form.Height;
         List<CardForm> usingCard = game.CardList.GetUsingList();
         float pileWidth = usingCard.Count * (cardWidth + padding);
         RectTransform rt = game.tempPanel.GetComponent<RectTransform>();
@@ -258,14 +309,124 @@ public class CardForm
     {
 
     }
+    #endregion
+
+    #region Action
+    public virtual void Attack()
+    {
+        List<GameObject> panelList = game.GetPlayerInAttackRange();
+        if (this is MagicAttack)
+        {
+            Player owner = this.Form.Owner;
+            if (owner != null)
+            {
+                Equipment equip = owner.Weapon.GetComponent<Equipment>();
+                if (equip.Form is PrelatiSpellbook)
+                {
+                    panelList.Clear();
+                    foreach (Player p in game.playerList)
+                    {
+                        if (p == game.myPlayer) continue;
+                        else panelList.Add(p.gameObject);
+                    }
+                }
+            }
+        }
+
+        foreach (GameObject panel in panelList)
+        {
+            GameObject zzz = panel;
+            Outline border = panel.GetComponent<Outline>();
+            if (border != null)
+            {
+                border.effectColor = Color.red;
+                border.enabled = true;
+            }
+            EventTrigger et = panel.GetComponent<EventTrigger>();
+            if (et != null)
+            {
+                //EventTrigger.TriggerEvent trigger = new EventTrigger.TriggerEvent();
+                EventTrigger.Entry entry = new EventTrigger.Entry();
+                entry.eventID = EventTriggerType.PointerClick;
+                entry.callback.AddListener((eventData) => { PerformAttack(zzz); });
+                et.delegates = new System.Collections.Generic.List<EventTrigger.Entry>();
+                et.delegates.Add(entry);
+            }
+        }
+
+        //Cancel Attack Button
+        game.btnCancel.SetActive(true);
+        game.CancelClick += delegate()
+        {
+            foreach (GameObject panel in panelList)
+            {
+                Outline border = panel.GetComponent<Outline>();
+                if (border != null) border.enabled = false;
+                EventTrigger et = panel.GetComponent<EventTrigger>();
+                if (et != null) et.delegates = null;
+            }
+        };
+    }
+
+    public void PerformAttack(GameObject panelClick)
+    {
+        //Set All Player within attacking become unselectable
+        bool physical = true;
+        if (this is MagicAttack)
+        {
+            physical = false;
+            Player owner = this.Form.Owner;
+            if (owner != null)
+            {
+                Equipment equip = owner.Weapon.GetComponent<Equipment>();
+                if (equip.Form is PrelatiSpellbook)
+                {
+                    owner.DamageIncrease += 2;
+                }
+            }
+        }
+
+        foreach (Player player in game.playerList)
+        {
+            GameObject panel = player.gameObject;
+            Outline border = panel.GetComponent<Outline>();
+            if (border != null) border.enabled = false;
+            EventTrigger et = panel.GetComponent<EventTrigger>();
+            if (et != null) et.delegates = null;
+        }
+        game.btnCancel.SetActive(false);
+        game.CancelClick = null;
+        //Use Card Animation
+        Vector3 position = game.tempPanel.transform.localPosition;
+        Player source = this.Form.Owner;
+        Player target = panelClick.GetComponent<Player>();
+
+        this.Form.Owner = null;
+        this.Form.FaceUp = true;
+        this.Form.CardData.State = Card.CardState.Using;
+        this.Form.State = Card.CardState.Using;
+        Action action = delegate()
+        {
+            this.Form.UpdateLastInteract();
+            RefreshHand(game.myPlayer);
+            RefreshPiles();
+            target.lastDamageCard = this;
+            target.Attacked = true;
+            game.Attack(1, source, target, physical);
+        };
+        this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
+    }
+    #endregion
 
     #region Handler
     public virtual void OnMouseClick()
     {
+        if (game.Modal) return;
         if (this.Form.Owner == game.myPlayer) game.ProcessingCard = this;
     }
     public virtual void OnMouseEnter()
     {
+        if (game.Modal) return;
         Form.Height = Form.Height + 10;
         Form.Width = Form.Width + 10;
     }
@@ -275,6 +436,7 @@ public class CardForm
     }
     public virtual void OnMouseLeave()
     {
+        if (game.Modal) return;
         Form.Height = Form.Height - 10;
         Form.Width = Form.Width - 10;
         //Form.Position = new Vector2(0, 0);

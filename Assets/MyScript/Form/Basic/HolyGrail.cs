@@ -26,28 +26,27 @@ public class HolyGrail : CardForm
         Player source = this.Form.Owner;
         mainAction = delegate()
         {
-            if (source.Healing != null) source.Healing.Invoke(1, source, source);
-            game.PilesCollect();
+            if (source.Healing != null) source.StartCoroutine(source.Healing(1, source, source));
+            if (game.GetBusyTask() < 0) game.PilesCollect();
         };
+        //source.OnWaitingAction += Heal;
     }
 
     public void PerformSaving()
     {
         Player source = this.Form.Owner;
-        Player target = this.Form.Owner.targetPlayer;
         mainAction = delegate()
         {
-            source.Healing.Invoke(1, source, source);
-            //if(target.CurrentHealth <0)
-            //{
-            //    target.BrinkOfDeath.Invoke(0, null, null);
-            //}
+            if (source.Healing != null) source.StartCoroutine(source.Healing(1, source, source));
+            if (game.GetBusyTask() < 0) game.PilesCollect();
         };
     }
 
     public override void UseCard()
     {
-        PerformHealing();
+        Player source = this.Form.Owner;
+        if (source.actionState == Player.ActionState.Free) PerformHealing();
+        else if (source.actionState == Player.ActionState.WaitingSave) PerformSaving();
         base.UseCard();
     }
 }

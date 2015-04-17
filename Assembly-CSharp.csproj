@@ -53,6 +53,7 @@
      <Compile Include="Assets\MyScript\Class\CardController.cs" />
      <Compile Include="Assets\MyScript\Class\CardForm.cs" />
      <Compile Include="Assets\MyScript\Class\Character.cs" />
+     <Compile Include="Assets\MyScript\Class\CharacterAbility.cs" />
      <Compile Include="Assets\MyScript\Class\Command.cs" />
      <Compile Include="Assets\MyScript\Class\CommandCode.cs" />
      <Compile Include="Assets\MyScript\Class\Equipment.cs" />
@@ -79,8 +80,13 @@
      <Compile Include="Assets\MyScript\Form\Character\MatouSakura.cs" />
      <Compile Include="Assets\MyScript\Form\Character\Rin.cs" />
      <Compile Include="Assets\MyScript\Form\Character\SaberAlter.cs" />
+     <Compile Include="Assets\MyScript\Form\Equipment\AestusEstus.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\Avalon.cs" />
+     <Compile Include="Assets\MyScript\Form\Equipment\AxeSword.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\BerserCar.cs" />
+     <Compile Include="Assets\MyScript\Form\Equipment\Clarent.cs" />
+     <Compile Include="Assets\MyScript\Form\Equipment\Ea.cs" />
+     <Compile Include="Assets\MyScript\Form\Equipment\Excalibur.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\GaeBuidhe.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\GilgameshArmor.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\Hrunting.cs" />
@@ -89,8 +95,10 @@
      <Compile Include="Assets\MyScript\Form\Equipment\Pegasus.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\PrelatiSpellbook.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\SaberArmor.cs" />
+     <Compile Include="Assets\MyScript\Form\Equipment\ThomsonContender.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\Vimana.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\YamahaVmax.cs" />
+     <Compile Include="Assets\MyScript\Form\Tools\Duel.cs" />
      <Compile Include="Assets\MyScript\GUI\NeoButton.cs" />
      <Compile Include="Assets\MyScript\GUI\NeoDialog.cs" />
      <Compile Include="Assets\MyScript\GUI\NeoWindow.cs" />

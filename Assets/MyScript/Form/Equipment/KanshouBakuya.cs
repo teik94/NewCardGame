@@ -41,4 +41,3 @@ public class KanshouBakuya : Weapon
         base.UnEquipped();
     }
 }
-

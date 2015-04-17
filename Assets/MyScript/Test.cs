@@ -11,27 +11,7 @@ public class Test : MonoBehaviour {
 
 	public void CreateDummy ()
 	{
-		Servant berserker = new Servant ("Lancelot", 3, Servant.ServantClass.Berserker, null, "Berserker");
-		Texture2D texture = Resources.Load ("Characters/" + berserker.Asset)  as Texture2D;
-		Sprite dummy = Sprite.Create (texture, new Rect (0, 0, texture.width, texture.height), new Vector2 (0f, 0f));
-		//Instantiate (dummy);
-
-
-		GameObject mainPanel = GameObject.Find ("Main Panel");
-		GameObject go = new GameObject("Test");
-		go.name = "Lancelot";
-		go.transform.SetParent (mainPanel.transform);
-
-		go.AddComponent(typeof(Lancelot));
-		RectTransform rt = go.AddComponent<RectTransform> ();
-		rt.sizeDelta = new Vector2 (372, 520);
-		//rt.SetLeftTopPosition(new Vector2(0,0));
-		rt.anchoredPosition = new Vector2(0,0);
-
-		UnityEngine.UI.Image cv = go.AddComponent<UnityEngine.UI.Image>();
-		//cv.fillCenter = true;
-		cv.sprite = dummy;
-
+		
 	}
 
     public void OnMouseEnter()

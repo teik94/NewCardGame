@@ -7,7 +7,7 @@ using UnityEngine.UI;
 
 public class Equipment: MonoBehaviour
 {
-    private CardForm form;
+    public CardForm form;
 
     public CardForm Form
     {
@@ -17,14 +17,20 @@ public class Equipment: MonoBehaviour
             form = value; 
             if(form!=null)
             {
-                if (image== null) image = gameObject.transform.FindChild("Image").GetComponent<Image>();
-                if (text == null) text = gameObject.transform.FindChild("Text").GetComponent<Text>();
+                try
+                {
+                    if (image == null) image = gameObject.transform.FindChild("Image").GetComponent<Image>();
+                    if (text == null) text = gameObject.transform.FindChild("Text").GetComponent<Text>();
+                }
+                catch {
+                    image = null;
+                    text = null;
+                }
+                if (image == null) image = gameObject.GetComponent<Image>();
                 Texture2D texture = Resources.Load("Icon/" + form.Form.CardData.Asset + "Icon") as Texture2D;
                 Sprite sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0f, 0f));
-                if (sprite == null) Debug.Log("sprite null");
-                if (image == null) Debug.Log("image null");
                 image.sprite = sprite;
-                text.text = form.Form.CardData.Name;
+                if (text != null) text.text = form.Form.CardData.Name;
             }
         }
     }
@@ -34,8 +40,22 @@ public class Equipment: MonoBehaviour
     public Text text;
     void Start()
     {
-        image = gameObject.transform.FindChild("Image").GetComponent<Image>();
-        text = gameObject.transform.FindChild("Text").GetComponent<Text>();
+        try
+        {
+            image = gameObject.transform.FindChild("Image").GetComponent<Image>();
+            text = gameObject.transform.FindChild("Text").GetComponent<Text>();
+        }catch
+        {
+            
+        }
+    }
+
+    public void UseEquip()
+    {
+        if(this.form != null)
+        {
+            this.form.UseEquipEffect();
+        }
     }
 
     void Update()

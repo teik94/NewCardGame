@@ -10,15 +10,21 @@
 using System;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
-public class Character
+public class Character : MonoBehaviour
 {
-	private string name;
-	private int maxHealth;
+	private string characterName;
+	private float maxHealth;
 	private CharacterType type;
 	private Character perfectMatch;
 	private string asset;
-	public Player Owner = null;
+	public Player PlayerOwner = null;
+    public Game game;
+
+    public CharacterAbility[] Ability = new CharacterAbility[5];
+
+    public int DamageModifer = 0;
 
 		#region MyRegion Property
 	public Character PerfectMatch {
@@ -48,7 +54,8 @@ public class Character
 		}
 	}
 
-	public int MaxHealth {
+    public float MaxHealth
+    {
 		get {
 			return maxHealth;
 		}
@@ -57,91 +64,106 @@ public class Character
 		}
 	}
 
-	public string Name {
+    public string CharacterName
+    {
 		get {
-			return name;
+            return characterName;
 		}
 		set {
-			name = value;
+            characterName = value;
 		}
 	}
 		#endregion
+
+    public delegate IEnumerator AbilityDelegate(int number, Player source, Player victim);
+    public AbilityDelegate JudgmentChange = null;
+    public AbilityDelegate JudgementDone = null;
+    public AbilityDelegate BeforeAttack = null;
+    public AbilityDelegate BeforeAttacked = null;
+    public AbilityDelegate EndAttack = null;
+    public AbilityDelegate AttackDamageModifier = null;
+    public AbilityDelegate BrinkOfDeath = null;
+    public AbilityDelegate CausePhysicalDamage = null;
+    public AbilityDelegate CauseMagicDamage = null;
+    public AbilityDelegate TakePhysicalDamage = null;
+    public AbilityDelegate TakeMagicDamage = null;
+    public AbilityDelegate ChangeDamageToHealth = null;
+    public AbilityDelegate BeforeTakeDamage = null;
+    public AbilityDelegate UseCard = null;
+    public AbilityDelegate BeginningOfTurn = null;
+    public AbilityDelegate JudgementPhase = null;
+    public AbilityDelegate DrawPhase = null;
+    public AbilityDelegate ActionPhase = null;
+    public AbilityDelegate DiscardPhase = null;
+    public AbilityDelegate EndTurn = null;
+    public AbilityDelegate AfterHealing = null;
+
 
 	public enum CharacterType
 	{
 		Servant,
 		Master,
 		Human,
+        Homunculus,
 		Monster,
 		Ruler,
 		Boss,
 	}
 
-	public Character ()
-	{
-	}
+    void Start()
+    {
+        //this.PlayerOwner = gameObject.transform.parent.GetComponent<Player>();
+        this.JudgementPhase += inJudgementPhase;
+        this.EndTurn += inEndPhase;
+    }
 
-	public Character (string _name, int _maxHealth, CharacterType _type, Character _perfectMatch, string _asset)
-	{
-		this.Name = _name;
-		this.Type = _type;
-		this.PerfectMatch = _perfectMatch;
-		this.MaxHealth = _maxHealth;
-		this.Asset = _asset;
-	}
+    public IEnumerator AbilityActive(CharacterAbility.AbilityForm type, int number, Player source, Player victim)
+    {
+        int busy = game.GetBusyTask();
+        int free = game.GetFreeTask();
+        foreach (CharacterAbility abi in Ability)
+        {
+            if (abi != null && abi.Form == type && abi.Status && abi.UsedTime < abi.UsedMax)
+            {
+                game.busy[free] = true;
+                StartCoroutine(abi.Ability(number, source, victim));
+                while(game.busy[free])yield return new WaitForSeconds(0.1f);
+            }
+        }
+        game.busy[busy] = false;
+    }
 
-	public virtual void Ability1()
-	{
-	}
-	public virtual void Ability2()
-	{
-	}
-	public virtual void Ability3()
-	{
-	}
-	public virtual void Ability4()
-	{
-	}
-	public virtual void Ability5()
-	{
-	}
-	public virtual void Ability6()
-	{
-	}
-		
-	public virtual void Attack(Guid cardID, Guid source, Guid target)
-	{
-		Command cm = new Command (CommandCode.Attack, cardID, source, target);
-	}
+    public virtual IEnumerator inJudgementPhase(int number, Player source, Player victim)
+    {
+        int busy = game.GetBusyTask();
+        int free = game.GetFreeTask();
+        foreach (CharacterAbility ability in this.Ability)
+        {
+            if (ability != null)
+            {
+                ability.Used = false; 
+                if(ability.limitType == CharacterAbility.LimitType.PerRound)ability.UsedTime = 0;
+            }
+        }
+        game.busy[busy] = false;
+        yield return new WaitForSeconds(0.1f);
+    }
 
-	public virtual void Heal(int number, Guid source, Guid target)
-	{
-		Command cm = new Command (CommandCode.Heal, number, source, target);
-	}
-	
-	public virtual void CausePhysicalDamage(int number, Guid source, Guid target)
-	{
-		Command cm = new Command (CommandCode.CauseMagicDamage, number, source, target);
-	}
+    public virtual IEnumerator inEndPhase(int number, Player source, Player victim)
+    {
+        int busy = game.GetBusyTask();
+        int free = game.GetFreeTask();
+        foreach (CharacterAbility ability in this.Ability)
+        {
+            if (ability != null)
+            {
+                ability.Used = false;
+                if (ability.limitType == CharacterAbility.LimitType.PerTurn) ability.UsedTime = 0;
+            }
+        }
+        game.busy[busy] = false;
+        yield return new WaitForSeconds(0.1f);
+    }
 
-	public virtual void ReceivedPhysicalDamage(int number, Guid source, Guid target)
-	{
-		Command cm = new Command (CommandCode.ReceivedPhysicalDamage, number, source, target);
-	}
-	
-	public virtual void CauseMagicDamage(int number, Guid source, Guid target)
-	{
-		Command cm = new Command (CommandCode.CauseMagicDamage, number, source, target);
-	}
-
-	public virtual void ReceivedMagicDamage(int number, Guid source, Guid target)
-	{
-		Command cm = new Command (CommandCode.ReceivedMagicDamage, number, source, target);
-	}
-	
-	public virtual void LossOfHealth(int number, Guid source, Guid target)
-	{
-		Command cm = new Command (CommandCode.LossOfHealth, number, source, target);
-	}
 }
 

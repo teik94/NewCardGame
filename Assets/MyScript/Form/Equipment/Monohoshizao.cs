@@ -16,7 +16,57 @@ public class Monohoshizao: Weapon
 
     public override void Ability()
     {
+
+        if(game.GetBusyTask()<0)
+        {
+            Player owner = this.Form.Owner;
+            Player.ActionState oldState = owner.actionState;
+            if (oldState == Player.ActionState.Free || oldState == Player.ActionState.WaitingAttack)
+            {
+                game.btnCancel.SetActive(true);
+                game.CancelClick += delegate()
+                {
+                    game.CancelClick = null;
+                    game.UseAsSomething = null;
+                    game.CustomCondition = null;
+                    game.UsedAsStr = "";
+                    game.btnCancel.SetActive(false);
+                    owner.actionState = oldState;
+                };
+
+                owner.actionState = Player.ActionState.UseAs;
+                game.UsedAsStr = "P.ATK";
+                game.CustomCondition += CheckSuit;
+
+                game.UseAsSomething += delegate()
+                {
+                    if(game.ProcessingCard !=null)
+                    {
+                        game.CancelClick = null;
+                        game.UseAsSomething = null;
+                        game.CustomCondition = null;
+                        game.btnCancel.SetActive(false);
+                        game.UsedAsStr = "";
+                        owner.actionState = oldState;
+                        game.ProcessingCard.Attack();
+                    }
+                };
+            }
+        }
         base.Ability();
+    }
+
+    public bool CheckSuit()
+    {
+        if (this.Form.Owner.actionState == Player.ActionState.UseAs)
+        {
+            Card.CardNumber number = game.ProcessingCard.Form.CardData.Number;
+            if (number > Card.CardNumber.Two && number < Card.CardNumber.Eight)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public override void UseCard()

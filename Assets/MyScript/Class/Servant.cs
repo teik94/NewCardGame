@@ -22,12 +22,6 @@ public class Servant:Character
 		Rider = 7,
 	}
 	public ServantClass Class;
-
-	public Servant (string _name, int _maxHealth, ServantClass _class, Character _perfectMatch, string _asset):
-		base (_name,_maxHealth,Character.CharacterType.Servant,_perfectMatch,_asset)
-	{
-		this.Class = _class;
-	}
 }
 
 

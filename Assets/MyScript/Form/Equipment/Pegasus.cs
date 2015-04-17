@@ -44,4 +44,3 @@ public class Pegasus : PlusVehicle
         base.UnEquipped();
     }
 }
-

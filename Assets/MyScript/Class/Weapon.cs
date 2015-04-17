@@ -25,7 +25,8 @@ public class Weapon : CardForm
 
     public override void Equipped()
     {
-        this.Form.Owner.AttackingRange += Range;
+        //this.Form.Owner.AttackingRange = 0;
+        this.Form.Owner.AttackingRange = Range;
     }
 
     public override void UnEquipped()
