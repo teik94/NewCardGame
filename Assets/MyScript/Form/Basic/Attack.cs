@@ -19,13 +19,37 @@ public class Attack: CardForm
         : base(new Card(Card.CardType.Basic, "Physical ATTACK", "PhysicalAttack", "Used to attack one player with physical damage.",
         suit, number, state, owner),g)
     {
+        this.UseCondition += useCondition;
+    }
 
+    private bool useCondition()
+    {
+        Player owner = this.Form.Owner;
+        if (owner != null && owner.actionState == Player.ActionState.Free && !owner.MainAttack)
+        {
+            return true;
+        }
+        else if (owner != null && owner.actionState == Player.ActionState.WaitingAttackDuel)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public override void UseCard()
     {
-        //Set All Player within attacking become selectable
-        Attack();
+        Player owner = this.Form.Owner;
+        if (owner.actionState == Player.ActionState.WaitingAttackDuel || owner.actionState == Player.ActionState.OnDuel)
+        {
+            RespondDuel();
+        }
+        else
+        {
+            Attack(); 
+        }
     }
 }
 

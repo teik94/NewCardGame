@@ -21,7 +21,7 @@ public class YamahaVmax : MinusVehicle
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 

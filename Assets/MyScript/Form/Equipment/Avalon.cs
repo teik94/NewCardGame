@@ -12,8 +12,7 @@ public class Avalon:Armor
     public Avalon(Card.CardSuit suit, Card.CardNumber number, Card.CardState state, Player owner, Game g)
         : base("Avalon", "Avalon", "", suit, number, state, owner, g)
     {
-        this.TakeMagicDamage += TakeDamage;
-        this.TakePhysicDamage += TakeDamage;
+        this.TakeDamage += AvalonTakeDamage;
 	}
 
     public override void Ability()
@@ -23,7 +22,7 @@ public class Avalon:Armor
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 
@@ -65,11 +64,12 @@ public class Avalon:Armor
         }
     }
     int free;
-    public IEnumerator TakeDamage(int number, Player source, Player victim)
+    public IEnumerator AvalonTakeDamage(int number, Player source, Player victim, Game.DamageType dmgType)
     {
         int busy = game.GetBusyTask();
         free = game.GetFreeTask();
         game.busy[free] = true;
+        Debug.Log("Close task " + free);
         Action<CardForm> action = delegate(CardForm cf)
         {
             source.StartCoroutine(this.AvalonTakeEffect(cf));
@@ -78,6 +78,7 @@ public class Avalon:Armor
 
         while (game.busy[free]) yield return new WaitForSeconds(0.1f);
         game.busy[busy] = false;
+        Debug.Log("Open task " + busy);
     }
 
     public IEnumerator AvalonTakeEffect(CardForm cf)
@@ -90,6 +91,7 @@ public class Avalon:Armor
             while (freeTask2) yield return new WaitForSeconds(0.1f);
         }
         game.busy[free] = false;
+        Debug.Log("Open task " + free);
         yield return new WaitForSeconds(0.1f);
         //game.JudgmentEffect -= AvalonTakeEffect;
     }

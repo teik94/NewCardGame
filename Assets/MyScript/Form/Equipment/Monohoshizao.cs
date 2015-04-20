@@ -71,7 +71,7 @@ public class Monohoshizao: Weapon
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 

@@ -18,28 +18,28 @@ public class HolyGrail : CardForm
         : base(new Card(Card.CardType.Basic, "Holy Grail", "HolyGrail", "Used to regain one unit of health or save one player when they are on the brink of death.",
         suit, number, state, owner),g)
     {
-
+        this.UseCondition += useCondition;
     }
 
-    public void PerformHealing()
+    private bool useCondition()
     {
-        Player source = this.Form.Owner;
-        mainAction = delegate()
+        Player owner = this.Form.Owner;
+        if (owner != null && owner.actionState == Player.ActionState.Free && owner.CurrentHealth < owner.MaxHealth)
         {
-            if (source.Healing != null) source.StartCoroutine(source.Healing(1, source, source));
-            if (game.GetBusyTask() < 0) game.PilesCollect();
-        };
-        //source.OnWaitingAction += Heal;
-    }
-
-    public void PerformSaving()
-    {
-        Player source = this.Form.Owner;
-        mainAction = delegate()
+            return true;
+        }
+        else if (owner != null && owner.actionState == Player.ActionState.WaitingBoD)
         {
-            if (source.Healing != null) source.StartCoroutine(source.Healing(1, source, source));
-            if (game.GetBusyTask() < 0) game.PilesCollect();
-        };
+            return true;
+        }
+        else if (owner != null && owner.actionState == Player.ActionState.WaitingSave)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public override void UseCard()
@@ -47,7 +47,7 @@ public class HolyGrail : CardForm
         Player source = this.Form.Owner;
         if (source.actionState == Player.ActionState.Free) PerformHealing();
         else if (source.actionState == Player.ActionState.WaitingSave) PerformSaving();
-        base.UseCard();
+        //base.UseCard();
     }
 }
 

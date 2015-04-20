@@ -51,13 +51,13 @@ public class IllyaAbility2 : CharacterAbility
         this.Form = AbilityForm.OnJudgment;
     }
 
-    public override IEnumerator Ability(int number, Player source, Player victim)
+    public override IEnumerator Ability(int number, Player source, Player victim, Game.DamageType dmgType)
     {
-        bool busyTask = game.busy[game.GetBusyTask()];
-        bool freeTask = game.busy[game.GetFreeTask()];
+        int busy = game.GetBusyTask();
+        //int free = game.GetFreeTask();
         game.DrawXCard(1, this.CharacterOwner.PlayerOwner);
         yield return new WaitForSeconds(0.5f);
-        busyTask = false;
+        if (busy >= 0) game.busy[busy] = false;
     }
 }
 
@@ -71,13 +71,14 @@ public class IllyaAbility3 : CharacterAbility
     }
 
 
-    public override IEnumerator Ability(int number, Player source, Player victim)
+    public override IEnumerator Ability(int number, Player source, Player victim, Game.DamageType dmgType)
     {
-        bool busyTask = game.busy[game.GetBusyTask()];
-        bool freeTask = game.busy[game.GetFreeTask()];
+        int busy = game.GetBusyTask();
+        Debug.Log("Start Illya Ability");
+        //int free = game.GetFreeTask();
         //Waiting for using ability
-        this.CharacterOwner.PlayerOwner.actionState = Player.ActionState.WaitingDiscard;
-        if (this.CharacterOwner.PlayerOwner == game.myPlayer)
+        source.actionState = Player.ActionState.WaitingDiscard;
+        if (source == game.myPlayer)
         {
             game.CustomCondition += CustomCondition;
             game.btnCancel.SetActive(true);
@@ -86,28 +87,28 @@ public class IllyaAbility3 : CharacterAbility
                 game.btnCancel.SetActive(false);
                 game.btnUse.SetActive(false);
                 game.CancelClick = null;
-                busyTask = false;
+                if (busy >= 0) game.busy[busy] = false;
                 game.CustomCondition = null;
-                this.CharacterOwner.PlayerOwner.Discard = null;
-                this.CharacterOwner.PlayerOwner.actionState = Player.ActionState.None;
+                source.Discard = null;
+                source.actionState = Player.ActionState.None;
             };
-            
         }
-        this.CharacterOwner.PlayerOwner.Discard += ReJudgment;
+        source.Discard += ReJudgment;
 
         //Auto AI
-        if (this.CharacterOwner.PlayerOwner.AutoAI)
+        if (source.AutoAI)
         {
-            busyTask = false;
+            if (busy >= 0) game.busy[busy] = false;
             game.CustomCondition = null;
-            this.CharacterOwner.PlayerOwner.Discard = null;
-            this.CharacterOwner.PlayerOwner.actionState = Player.ActionState.None;
+            source.Discard = null;
+            source.actionState = Player.ActionState.None;
         }
-        while (this.CharacterOwner.PlayerOwner.actionState == Player.ActionState.WaitingDiscard)
+        while (source.actionState == Player.ActionState.WaitingDiscard)
         {
             yield return new WaitForSeconds(0.1f);
         }
-        busyTask = false;
+        Debug.Log("Open task " + busy);
+        if (busy >= 0) game.busy[busy] = false;
     }
 
     public IEnumerator ReJudgment()

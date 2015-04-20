@@ -13,8 +13,8 @@ public class Hrunting : Weapon
         : base("Hrunting", "Hrunting", "", 5, suit, number, state, owner, g)
     {
         this.DamageIncrease += HruntingIncreaseDamage;
-        this.CauseMagicDamage += HruntingEffect;
-        this.CausePhysicDamage += HruntingEffect;
+        this.CauseDamage += HruntingEffect;
+        //this.CausePhysicDamage += HruntingEffect;
     }
 
     public override void Ability()
@@ -29,7 +29,7 @@ public class Hrunting : Weapon
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 
@@ -49,7 +49,7 @@ public class Hrunting : Weapon
         base.UnEquipped();
     }
 
-    public IEnumerator HruntingEffect(int number, Player source, Player victim)
+    public IEnumerator HruntingEffect(int number, Player source, Player victim, Game.DamageType dmgType)
     {
         //while (game.Busy || game.Busy2) yield return new WaitForSeconds(0.1f);
         int busy = game.GetBusyTask();
@@ -101,7 +101,7 @@ public class Hrunting : Weapon
         yield return new WaitForSeconds(0.1f);
     }
 
-    public IEnumerator HruntingIncreaseDamage(int number, Player source, Player victim)
+    public IEnumerator HruntingIncreaseDamage(int number, Player source, Player victim, Game.DamageType dmgType)
     {
         //while (game.Busy || game.Busy2) yield return new WaitForSeconds(0.1f);
         int busy = game.GetBusyTask();

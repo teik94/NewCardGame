@@ -20,7 +20,7 @@ public class Vimana : MinusVehicle
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 

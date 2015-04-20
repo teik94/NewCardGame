@@ -76,27 +76,12 @@ public class Character : MonoBehaviour
 		#endregion
 
     public delegate IEnumerator AbilityDelegate(int number, Player source, Player victim);
-    public AbilityDelegate JudgmentChange = null;
-    public AbilityDelegate JudgementDone = null;
-    public AbilityDelegate BeforeAttack = null;
-    public AbilityDelegate BeforeAttacked = null;
-    public AbilityDelegate EndAttack = null;
-    public AbilityDelegate AttackDamageModifier = null;
-    public AbilityDelegate BrinkOfDeath = null;
-    public AbilityDelegate CausePhysicalDamage = null;
-    public AbilityDelegate CauseMagicDamage = null;
-    public AbilityDelegate TakePhysicalDamage = null;
-    public AbilityDelegate TakeMagicDamage = null;
-    public AbilityDelegate ChangeDamageToHealth = null;
-    public AbilityDelegate BeforeTakeDamage = null;
-    public AbilityDelegate UseCard = null;
     public AbilityDelegate BeginningOfTurn = null;
     public AbilityDelegate JudgementPhase = null;
     public AbilityDelegate DrawPhase = null;
     public AbilityDelegate ActionPhase = null;
     public AbilityDelegate DiscardPhase = null;
     public AbilityDelegate EndTurn = null;
-    public AbilityDelegate AfterHealing = null;
 
 
 	public enum CharacterType
@@ -117,7 +102,7 @@ public class Character : MonoBehaviour
         this.EndTurn += inEndPhase;
     }
 
-    public IEnumerator AbilityActive(CharacterAbility.AbilityForm type, int number, Player source, Player victim)
+    public IEnumerator AbilityActive(CharacterAbility.AbilityForm type, int number, Player source, Player victim , Game.DamageType dmgType)
     {
         int busy = game.GetBusyTask();
         int free = game.GetFreeTask();
@@ -126,17 +111,19 @@ public class Character : MonoBehaviour
             if (abi != null && abi.Form == type && abi.Status && abi.UsedTime < abi.UsedMax)
             {
                 game.busy[free] = true;
-                StartCoroutine(abi.Ability(number, source, victim));
+                Debug.Log("Ability Active - Close task " + free);
+                StartCoroutine(abi.Ability(number, source, victim, dmgType));
                 while(game.busy[free])yield return new WaitForSeconds(0.1f);
             }
         }
         game.busy[busy] = false;
+        Debug.Log("Ability Active - Open task " + busy);
     }
 
     public virtual IEnumerator inJudgementPhase(int number, Player source, Player victim)
     {
         int busy = game.GetBusyTask();
-        int free = game.GetFreeTask();
+        //int free = game.GetFreeTask();
         foreach (CharacterAbility ability in this.Ability)
         {
             if (ability != null)
@@ -152,7 +139,7 @@ public class Character : MonoBehaviour
     public virtual IEnumerator inEndPhase(int number, Player source, Player victim)
     {
         int busy = game.GetBusyTask();
-        int free = game.GetFreeTask();
+        //int free = game.GetFreeTask();
         foreach (CharacterAbility ability in this.Ability)
         {
             if (ability != null)

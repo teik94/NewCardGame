@@ -13,7 +13,18 @@ public class Pegasus : PlusVehicle
     {
 
     }
-
+    public override bool useCondition()
+    {
+        Player owner = this.Form.Owner;
+        if (owner.CurrentHealth < 2)
+        {
+            return false;
+        }
+        else
+        {
+            return base.useCondition();
+        }
+    }
     public override void Ability()
     {
         base.Ability();
@@ -21,7 +32,7 @@ public class Pegasus : PlusVehicle
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 
@@ -34,6 +45,7 @@ public class Pegasus : PlusVehicle
     public override void Equipped()
     {
         this.Form.Owner.PlusDistance += 2;
+        if (this.Form.Owner.CurrentHealth > 0) this.Form.Owner.CurrentHealth -= 1;
         base.Equipped();
     }
 

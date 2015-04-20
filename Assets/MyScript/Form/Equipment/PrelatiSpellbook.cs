@@ -11,7 +11,17 @@ public class PrelatiSpellbook: Weapon
     public PrelatiSpellbook(Card.CardSuit suit, Card.CardNumber number, Card.CardState state, Player owner, Game g)
         : base("Prelati's Spellbook", "PrelatiSpellbook", "", 1, suit, number, state, owner, g)
     {
+        this.DamageIncrease += PrelatiEffect;
+    }
 
+    private System.Collections.IEnumerator PrelatiEffect(int number, Player source, Player victim, Game.DamageType dmgType)
+    {
+        int busy = game.GetBusyTask();
+
+        if (dmgType == Game.DamageType.Magical) source.DamageIncrease += 2;
+
+        if (busy >= 0) game.busy[busy] = false;
+        yield return new WaitForSeconds(0.1f);
     }
 
     public override void Ability()
@@ -21,7 +31,7 @@ public class PrelatiSpellbook: Weapon
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 

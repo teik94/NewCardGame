@@ -21,7 +21,7 @@ public class BerserCar: PlusVehicle
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 

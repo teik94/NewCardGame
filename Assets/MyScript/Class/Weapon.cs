@@ -21,7 +21,21 @@ public class Weapon : CardForm
         : base(new Card(Card.CardType.Weapon, name, asset, ability, suit, number, state, owner), g)
     {
 		this.Range = range;
+        this.UseCondition += useCondition;
 	}
+
+    public virtual bool useCondition()
+    {
+        Player owner = this.Form.Owner;
+        if (owner != null && owner.actionState == Player.ActionState.Free)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     public override void Equipped()
     {

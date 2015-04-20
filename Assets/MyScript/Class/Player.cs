@@ -35,7 +35,9 @@ public class Player : MonoBehaviour
 
     public bool DodgeAble = true;
     public bool IsDodge = false;
-    public bool AdditionDodge = false;
+    //public bool AdditionDodge = false;
+    public int AdditionDodge = 1;
+    //public int AdditionAttack = 0;
     public bool MainAttack = false;
     public bool CommandSeal = false;
     public int DamageIncrease = 0;
@@ -68,21 +70,26 @@ public class Player : MonoBehaviour
     public delegate IEnumerator EffectDelegate(int number, Player source, Player victim);
     public EffectDelegate BeforeAttack = null;
     public EffectDelegate BeforeAttacked = null;
-    public EffectDelegate TakeMagicDamage = null;
-    public EffectDelegate TakePhysicDamage = null;
-    public EffectDelegate CauseMagicDamage = null;
-    public EffectDelegate CausePhysicDamage = null;
+    //public EffectDelegate TakeMagicDamage = null;
+    //public EffectDelegate TakePhysicDamage = null;
+    //public EffectDelegate CauseMagicDamage = null;
+    //public EffectDelegate CausePhysicDamage = null;
     public EffectDelegate Healing = null;
     public EffectDelegate AfterHealing = null;
     public EffectDelegate BrinkOfDeath = null;
     public EffectDelegate EndAttack = null;
+    public EffectDelegate HealModifier = null;
 
 
-    public delegate IEnumerator ModifierDelegate(int number, Player source, Player victim);
-    public ModifierDelegate AttackDamageModifier = null;
-    public ModifierDelegate DamageModifier = null;
-    public ModifierDelegate DamageCalculation = null;
-    public ModifierDelegate HealModifier = null;
+
+    public delegate IEnumerator DamageDelegate(int number, Player source, Player victim, Game.DamageType dmgType);
+    public DamageDelegate AttackDamageModifier = null;
+    public DamageDelegate DamageModifier = null;
+    public DamageDelegate BeforeDamageCalculation = null;
+    public DamageDelegate DamageCalculation = null;
+    public DamageDelegate TakeDamage = null;
+    public DamageDelegate CauseDamage = null;
+    public DamageDelegate Duel = null;
 
     public delegate IEnumerator SequentiallyDelegate();
     public SequentiallyDelegate OnJudgment = null;
@@ -93,7 +100,7 @@ public class Player : MonoBehaviour
     public enum ActionState
     {
         None, Free, WaitingDodge, WaitingTool, WaitingRhoAias, WaitingBoD, WaitingSave, WaitingDiscard,
-        UseAs, WaitingAttack,
+        UseAs, WaitingAttack, WaitingAttackDuel, OnDuel,
     }
 
     public enum PlayerTurn
@@ -232,25 +239,25 @@ public class Player : MonoBehaviour
     private IEnumerator afterHealing(int number, Player source, Player victim)
     {
         int busy = game.GetBusyTask();
-        int free = game.GetFreeTask();
+        //int free = game.GetFreeTask();
 
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.5f);
     }
 
     private IEnumerator brinkOfDeath(int number, Player source, Player victim)
     {
         int busy = game.GetBusyTask();
-        int free = game.GetFreeTask();
+        //int free = game.GetFreeTask();
         actionState = ActionState.WaitingBoD;
 
         //do something
 
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.1f);
     }
 
-    private IEnumerator attackDamageModifier(int number, Player source, Player victim)
+    private IEnumerator attackDamageModifier(int number, Player source, Player victim, Game.DamageType dmgType)
     {
         int busy = game.GetBusyTask();
         int free = game.GetFreeTask();
@@ -261,22 +268,22 @@ public class Player : MonoBehaviour
             CommandSeal = false;
         }
         CardForm weapon = GetWeapon();
-        if (weapon != null && weapon.DamageIncrease != null) { game.busy[free] = true; StartCoroutine(weapon.DamageIncrease(number, source, victim)); }
+        if (weapon != null && weapon.DamageIncrease != null) { game.busy[free] = true; StartCoroutine(weapon.DamageIncrease(number, source, victim, dmgType)); }
         while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.AttackDamageModifier, number, source, victim)); }
+        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.AttackDamageModifier, number, source, victim, dmgType)); }
         while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.AttackDamageModifier, number, source, victim)); }
+        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.AttackDamageModifier, number, source, victim, dmgType)); }
         while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.1f);
     }
 
-    private IEnumerator damageModifier(int number, Player source, Player victim)
+    private IEnumerator damageModifier(int number, Player source, Player victim, Game.DamageType dmgType)
     {
         int busy = game.GetBusyTask();
-        int free = game.GetFreeTask();
+        //int free = game.GetFreeTask();
 
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.1f);
     }
 
@@ -292,7 +299,7 @@ public class Player : MonoBehaviour
             if (AfterHealing != null) { game.busy[free] = true; StartCoroutine(AfterHealing(number, source, victim)); }
             while (game.busy[free]) yield return new WaitForSeconds(0.1f);
         }
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.5f);
     }
 
@@ -302,8 +309,19 @@ public class Player : MonoBehaviour
         int free = game.GetFreeTask();
         actionState = ActionState.None;
         targetPlayer = victim;
-        MainAttack = true;
-        game.busy[busy] = false;
+        source.MainAttack = true;
+
+        CardForm weapon = GetWeapon();
+        if (weapon != null && weapon.BeforeAttack != null) { game.busy[free] = true; StartCoroutine(weapon.BeforeAttack(number, source, victim)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.Attacking, number, source, victim, Game.DamageType.Physical)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.Attacking, number, source, victim, Game.DamageType.Physical)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.1f);
     }
 
@@ -312,7 +330,7 @@ public class Player : MonoBehaviour
         int busy = game.GetBusyTask();
         IsDodge = false;
         //game.Busy = true;
-        actionState = ActionState.WaitingDodge;
+        //actionState = ActionState.WaitingDodge;
         targetPlayer = source;
         if (source.DodgeAble)
         {
@@ -320,7 +338,7 @@ public class Player : MonoBehaviour
             {
                 if (victim == game.myPlayer)
                 {
-
+                    victim.actionState = ActionState.WaitingDodge;
                     game.btnCancel.SetActive(true);
                     game.CancelClick += delegate()
                     {
@@ -328,38 +346,73 @@ public class Player : MonoBehaviour
                         game.btnCancel.SetActive(false);
                         game.CancelClick = null;
                         game.busy[busy] = false;
+                        victim.actionState = ActionState.None;
                     };
-                    yield return new WaitForSeconds(3);
-
-                    if (game.btnCancel.activeSelf)
-                    {
-                        game.btnCancel.SetActive(false);
-                        game.CancelClick = null;
-                    }
+                    while (victim.actionState == ActionState.WaitingDodge) yield return new WaitForSeconds(0.1f);
                 }
             }
             else
             {
                 List<CardForm> hand = game.CardList.GetHandList(this);
+                int dodgeCount = 0;
+                int dodgeNeed = AdditionDodge + 1;
                 foreach (CardForm cf in hand)
                 {
                     if (cf is Dodge)
+                    { dodgeCount++; }
+                }
+                if (dodgeCount >= (AdditionDodge + 1))
+                {
+                    for (int i = 0; i < hand.Count; i++)
                     {
-                        Dodge dodgeCard = cf as Dodge;
-                        dodgeCard.UseCard();
-                        if (!source.AdditionDodge) IsDodge = true;
+                        if (hand[i] is Dodge)
+                        {
+                            Dodge dodgeCard = hand[i] as Dodge;
+                            dodgeCard.UseCard();
+                            dodgeNeed--;
+                            if (dodgeNeed <= 0) break;
+                        }
                     }
+                    IsDodge = true;
+                }
+                else
+                {
+                    IsDodge = false;
                 }
             }
         }
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.5f);
     }
 
-    private IEnumerator damageCalculation(int number, Player source, Player victim)
+    private IEnumerator beforeDamageCalculation(int number, Player source, Player victim, Game.DamageType dmgType)
     {
         int busy = game.GetBusyTask();
         int free = game.GetFreeTask();
+
+        CardForm armor = GetArmor();
+        if (armor != null && armor.DamageDecrease != null) { game.busy[free] = true; StartCoroutine(armor.DamageDecrease(number, source, victim, dmgType)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.DecreaseDamage, number, source, victim, dmgType)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.DecreaseDamage, number, source, victim, dmgType)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (busy >= 0) game.busy[busy] = false;
+        yield return new WaitForSeconds(0.1f);
+    }
+
+    private IEnumerator damageCalculation(int number, Player source, Player victim, Game.DamageType dmgType)
+    {
+        int busy = game.GetBusyTask();
+        int free = game.GetFreeTask();
+        if (victim.DamageDecrease >= (number + source.DamageIncrease))
+        {
+            victim.DamageTaken = 0;
+            if (busy >= 0) game.busy[busy] = false;
+            yield break;
+        }
         int damage = (number + source.DamageIncrease) - victim.DamageDecrease;
         victim.DamageTaken = damage;
         if (victim.CurrentHealth - damage > 0) victim.CurrentHealth -= damage;
@@ -370,102 +423,69 @@ public class Player : MonoBehaviour
             if (victim.BrinkOfDeath != null) { game.busy[free] = true; victim.StartCoroutine(victim.BrinkOfDeath(negativeHealth, source, victim)); }
             while (game.busy[free]) yield return new WaitForSeconds(0.1f);
         }
-        source.DamageIncrease = 0;
-        victim.DamageDecrease = 0;
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.1f);
     }
 
-    private IEnumerator takeMagicDamage(int number, Player source, Player victim)
+    private IEnumerator takeDamage(int number, Player source, Player victim, Game.DamageType dmgType)
     {
         //while (game.Busy || game.Busy2) yield return new WaitForSeconds(0.1f);
         int busy = game.GetBusyTask();
         int free = game.GetFreeTask();
         lastDamagePlayer = source;
 
-        CardForm armor = GetArmor();
-        if (armor != null && armor.TakeMagicDamage != null) { game.busy[free] = true; StartCoroutine(armor.TakeMagicDamage(number, source, victim)); }
-        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+        if (victim.DamageTaken > 0)
+        {
+            CardForm armor = GetArmor();
+            if (armor != null && armor.TakeDamage != null) { game.busy[free] = true; StartCoroutine(armor.TakeDamage(number, source, victim, dmgType)); }
+            while (game.busy[free]) yield return new WaitForSeconds(0.1f);
 
-        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.TakeMagicDamage, number, source, victim));}
-        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.TakeMagicDamage, number, source, victim)); }
-        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+            if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.TakeDamage, number, source, victim, dmgType)); }
+            while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+            if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.TakeDamage, number, source, victim, dmgType)); }
+            while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+        }
+
         victim.DamageTaken = 0;
-        game.busy[busy] = false;
+        victim.lastDamageCard = null;
+        source.DamageIncrease = 0;
+        victim.DamageDecrease = 0;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.5f);
     }
 
-    private IEnumerator takePhysicDamage(int number, Player source, Player victim)
-    {
-        int busy = game.GetBusyTask();
-        int free = game.GetFreeTask();
-        lastDamagePlayer = source;
-
-        CardForm armor = GetArmor();
-        if (armor != null && armor.TakePhysicDamage != null) { game.busy[free] = true; StartCoroutine(armor.TakePhysicDamage(number, source, victim)); }
-        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-
-        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.TakePhysicalDamage, number, source, victim));}
-        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.TakePhysicalDamage, number, source, victim)); }
-        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-        victim.DamageTaken = 0;
-        game.busy[busy] = false;
-        yield return new WaitForSeconds(0.5f);
-    }
-
-    private IEnumerator causeMagicDamage(int number, Player source, Player victim)
+    private IEnumerator causeDamage(int number, Player source, Player victim, Game.DamageType dmgType)
     {
         //while (game.Busy || game.Busy2) yield return new WaitForSeconds(0.1f);
         int busy = game.GetBusyTask();
         int free = game.GetFreeTask();
         lastDamagePlayer = source;
 
-        if (victim.Attacked)
+        if (victim.Attacked && victim.DamageTaken > 0)
         {
             victim.Attacked = false;
             CardForm weapon = GetWeapon();
-            if (weapon != null && weapon.CauseMagicDamage != null) { game.busy[free] = true; StartCoroutine(weapon.CauseMagicDamage(number, source, victim)); }
+            if (weapon != null && weapon.CauseDamage != null) { game.busy[free] = true; StartCoroutine(weapon.CauseDamage(number, source, victim, dmgType)); }
             while (game.busy[free]) yield return new WaitForSeconds(0.1f);
         }
 
-        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.CauseMagicDamage, number, source, victim)); }
-        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-
-        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.CauseMagicDamage, number, source, victim)); }
-        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-
-        game.busy[busy] = false;
-        yield return new WaitForSeconds(0.5f);
-    }
-
-    private IEnumerator causePhysicDamage(int number, Player source, Player victim)
-    {
-        int busy = game.GetBusyTask();
-        int free = game.GetFreeTask();
-        lastDamagePlayer = source;
-
-        if (victim.Attacked)
+        if (victim.DamageTaken > 0)
         {
-            victim.Attacked = false;
-            CardForm weapon = GetWeapon();
-            if (weapon != null && weapon.CausePhysicDamage != null) { game.busy[free] = true; StartCoroutine(weapon.CausePhysicDamage(number, source, victim)); }
+            if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.CauseDamage, number, source, victim, dmgType)); }
+            while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+            if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.CauseDamage, number, source, victim, dmgType)); }
             while (game.busy[free]) yield return new WaitForSeconds(0.1f);
         }
 
-        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.CausePhysicalDamage, number, source, victim));}
-        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.CausePhysicalDamage, number, source, victim)); }
-        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.5f);
     }
 
     private IEnumerator endAttack(int number, Player source, Player victim)
     {
         int busy = game.GetBusyTask();
-        int free = game.GetFreeTask();
+        //int free = game.GetFreeTask();
         targetPlayer = null;
         if (turn == PlayerTurn.Action)
         {
@@ -475,8 +495,9 @@ public class Player : MonoBehaviour
         {
             actionState = ActionState.None;
         }
-        victim.lastDamageCard = null;
-        game.busy[busy] = false;
+
+        victim.AdditionDodge = 0;
+        if (busy >= 0) game.busy[busy] = false;
         if (game.GetBusyTask() < 0) game.PilesCollect();
         yield return new WaitForSeconds(0.1f);
     }
@@ -497,7 +518,7 @@ public class Player : MonoBehaviour
                     {
                         //Invoke ability or effect that happend before the judgment take an effect
                         game.busy[free] = true;
-                        StartCoroutine(ability.Ability(0, this, this));
+                        StartCoroutine(ability.Ability(0, this, this, Game.DamageType.Physical));
 
                         //Use Busy2 to stop the queuing
                         while (game.busy[free]) yield return new WaitForSeconds(0.1f);
@@ -518,7 +539,7 @@ public class Player : MonoBehaviour
                     {
                         //Invoke ability or effect that happend before the judgment take an effect
                         game.busy[free] = true;
-                        StartCoroutine(ability.Ability(0, this, this));
+                        StartCoroutine(ability.Ability(0, this, this, Game.DamageType.Physical));
 
                         //Use Busy2 to stop the queuing
                         while (game.busy[free]) yield return new WaitForSeconds(0.1f);
@@ -528,26 +549,227 @@ public class Player : MonoBehaviour
         }
         #endregion
 
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
     }
 
     private IEnumerator beforeJudgmentTakeEffect()
     {
         int busy = game.GetBusyTask();
-        int free = game.GetFreeTask();
+        //int free = game.GetFreeTask();
 
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.1f);
     }
 
     private IEnumerator afterJudgmentTakeEffect()
     {
         int busy = game.GetBusyTask();
-        int free = game.GetFreeTask();
+        //int free = game.GetFreeTask();
 
-        game.busy[busy] = false;
+        if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.1f);
     }
+
+    private IEnumerator onDuel(int number, Player source, Player victim, Game.DamageType dmgType)
+    {
+        int busy = game.GetBusyTask();
+        int free = game.GetFreeTask();
+
+        victim.actionState = ActionState.OnDuel;
+        source.actionState = ActionState.OnDuel;
+        do
+        {
+            victim.actionState = ActionState.WaitingAttackDuel;
+            if (victim == game.myPlayer)
+            {
+                game.btnCancel.SetActive(true);
+                game.CancelClick += delegate()
+                {
+                    game.btnCancel.SetActive(false);
+                    game.CancelClick = null;
+                    victim.actionState = ActionState.None;
+                };
+            }
+            else if(victim.AutoAI)
+            {
+                List<CardForm> hand = game.CardList.GetHandList(victim);
+                int atkCount = 0;
+                Debug.Log("Victim hand: " + hand.Count);
+                foreach (CardForm cf in hand)
+                {
+                    if (cf is Attack || cf is MagicAttack)
+                    { atkCount++; }
+                }
+                if (atkCount >= 1)
+                {
+                    for (int i = 0; i < hand.Count; i++)
+                    {
+                        if (hand[i] is Attack)
+                        {
+                            Attack atkCard = hand[i] as Attack;
+                            victim.actionState = Player.ActionState.OnDuel;
+                            atkCard.RespondDuel();
+                            break;
+                        }
+                        else if (hand[i] is MagicAttack)
+                        {
+                            MagicAttack atkCard = hand[i] as MagicAttack;
+                            atkCard.RespondDuel();
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    victim.actionState = ActionState.None;
+                }
+            }
+
+            while (victim.actionState == ActionState.WaitingAttackDuel) yield return new WaitForSeconds(0.1f);
+
+            if (victim.actionState == ActionState.None) break;
+
+            source.actionState = ActionState.WaitingAttackDuel;
+            if (source == game.myPlayer)
+            {
+                game.btnCancel.SetActive(true);
+                game.CancelClick += delegate()
+                {
+                    game.btnCancel.SetActive(false);
+                    game.CancelClick = null;
+                    source.actionState = ActionState.None;
+                };
+            }
+            else if (source.AutoAI)
+            {
+                List<CardForm> hand = game.CardList.GetHandList(source);
+                Debug.Log("Source hand: " + hand.Count);
+                int atkCount = 0;
+                foreach (CardForm cf in hand)
+                {
+                    if (cf is Attack || cf is MagicAttack)
+                    { atkCount++; }
+                }
+                if (atkCount >= 1)
+                {
+                    for (int i = 0; i < hand.Count; i++)
+                    {
+                        if (hand[i] is Attack)
+                        {
+                            Attack atkCard = hand[i] as Attack;
+                            atkCard.RespondDuel();
+                            break;
+                        }
+                        else if (hand[i] is MagicAttack)
+                        {
+                            MagicAttack atkCard = hand[i] as MagicAttack;
+                            atkCard.RespondDuel();
+                            break;
+                        }
+                    }
+                    //source.actionState = ActionState.None;
+                }
+                else
+                {
+                    source.actionState = ActionState.None;
+                }
+            }
+            while (source.actionState == ActionState.WaitingAttackDuel) yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.3f);
+
+            if (source.actionState == ActionState.None) break;
+        }
+        while (victim.actionState != ActionState.None && source.actionState != ActionState.None);
+
+        if (victim.actionState == ActionState.None)
+        {
+            game.busy[free] = true;
+            if (source.DamageModifier != null) source.StartCoroutine(source.DamageModifier(number, source, victim, dmgType));
+            while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+            game.busy[free] = true;
+            if (victim.BeforeDamageCalculation != null) victim.StartCoroutine(victim.BeforeDamageCalculation(number, source, victim, dmgType));
+            while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+            game.busy[free] = true;
+            if (victim.DamageCalculation != null) victim.StartCoroutine(victim.DamageCalculation(number, source, victim, dmgType));
+            while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+        }
+        else if (source.actionState == ActionState.None)
+        {
+            game.busy[free] = true;
+            if (victim.DamageModifier != null) victim.StartCoroutine(victim.DamageModifier(number, source, source, dmgType));
+            while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+            game.busy[free] = true;
+            if (source.BeforeDamageCalculation != null) source.StartCoroutine(source.BeforeDamageCalculation(number, source, source, dmgType));
+            while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+            game.busy[free] = true;
+            if (source.DamageCalculation != null) source.StartCoroutine(source.DamageCalculation(number, source, source, dmgType));
+            while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+        }
+
+        if (victim.turn == PlayerTurn.Action)victim.actionState = ActionState.Free;
+        else victim.actionState = ActionState.None;
+
+        if (source.turn == PlayerTurn.Action) source.actionState = ActionState.Free;
+        else source.actionState = ActionState.None;
+
+
+        if (busy >= 0) game.busy[busy] = false;
+
+        if (game.GetBusyTask() < 0) game.PilesCollect();
+        yield return new WaitForSeconds(0.1f);
+    }
+
+    //private IEnumerator takePhysicDamage(int number, Player source, Player victim)
+    //{
+    //    int busy = game.GetBusyTask();
+    //    int free = game.GetFreeTask();
+    //    lastDamagePlayer = source;
+
+    //    if (victim.DamageTaken > 0)
+    //    {
+    //        CardForm armor = GetArmor();
+    //        if (armor != null && armor.TakePhysicDamage != null) { game.busy[free] = true; StartCoroutine(armor.TakePhysicDamage(number, source, victim)); }
+    //        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+    //        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.TakePhysicalDamage, number, source, victim)); }
+    //        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+    //        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.TakePhysicalDamage, number, source, victim)); }
+    //        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+    //    }
+
+    //    victim.DamageTaken = 0;
+    //    victim.lastDamageCard = null;
+    //    source.DamageIncrease = 0;
+    //    victim.DamageDecrease = 0;
+    //    if (busy >= 0) game.busy[busy] = false;
+    //    yield return new WaitForSeconds(0.5f);
+    //}
+
+    //private IEnumerator causePhysicDamage(int number, Player source, Player victim)
+    //{
+    //    int busy = game.GetBusyTask();
+    //    int free = game.GetFreeTask();
+    //    lastDamagePlayer = source;
+
+    //    if (victim.Attacked && victim.DamageTaken > 0)
+    //    {
+    //        victim.Attacked = false;
+    //        CardForm weapon = GetWeapon();
+    //        if (weapon != null && weapon.CausePhysicDamage != null) { game.busy[free] = true; StartCoroutine(weapon.CausePhysicDamage(number, source, victim)); }
+    //        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+    //    }
+    //    if (victim.DamageTaken > 0)
+    //    {
+    //        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.CausePhysicalDamage, number, source, victim)); }
+    //        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+    //        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.CausePhysicalDamage, number, source, victim)); }
+    //        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+    //    }
+
+    //    if (busy >= 0) game.busy[busy] = false;
+    //    yield return new WaitForSeconds(0.5f);
+    //}
+
     #endregion
 
     void Start()
@@ -603,18 +825,18 @@ public class Player : MonoBehaviour
         this.AfterHealing += afterHealing;
         this.BrinkOfDeath += brinkOfDeath;
         this.AttackDamageModifier += attackDamageModifier;
+        this.BeforeDamageCalculation += beforeDamageCalculation;
         this.DamageCalculation += damageCalculation;
         this.BeforeAttack += beforeAttack;
         this.BeforeAttacked += beforeAttacked;
         this.EndAttack += endAttack;
-        this.TakeMagicDamage += takeMagicDamage;
-        this.TakePhysicDamage += takePhysicDamage;
-        this.CauseMagicDamage += causeMagicDamage;
-        this.CausePhysicDamage += causePhysicDamage;
+        this.TakeDamage += takeDamage;
+        this.CauseDamage += causeDamage;
         this.DamageModifier += damageModifier;
         this.OnJudgment += onJudgment;
         this.BeforeJudgmentTakeEffect += beforeJudgmentTakeEffect;
         this.AfterJudgmentTakeEffect += afterJudgmentTakeEffect;
+        this.Duel += onDuel;
     }
 
     void Update()

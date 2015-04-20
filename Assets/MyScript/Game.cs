@@ -43,6 +43,13 @@ public class Game : MonoBehaviour
     //public List<bool> Task = new List<bool>();
     Text phase, yourHealth, useButtonText;
 
+    public enum DamageType
+    {
+        Physical, Magical, LossHealth
+    }
+
+    public DamageType TypeOfDmg = DamageType.Physical;
+
     public delegate bool ConditionDelegate();
     public ConditionDelegate CustomCondition = null;
 
@@ -61,70 +68,71 @@ public class Game : MonoBehaviour
             if (processingCard != null)
             {
                 //btnCancel.SetActive(true);
-                bool condition = false;
-                if (CustomCondition != null) condition = CustomCondition.Invoke();
-
-                if (condition)
+                if (CustomCondition != null && CustomCondition.Invoke())
                 {
                     btnUse.SetActive(true);
                 }
-                else if (processingCard is Attack || processingCard is MagicAttack)
+                else if (processingCard.UseCondition!= null && processingCard.UseCondition.Invoke())
                 {
-                    if (!processingCard.Form.Owner.MainAttack
-                        && processingCard.Form.Owner.actionState == Player.ActionState.Free)
-                    {
-                        btnUse.SetActive(true);
-                    }
-                    else
-                    {
-                        btnUse.SetActive(false);
-                    }
+                    btnUse.SetActive(true);
                 }
-                else if (processingCard is Dodge)
-                {
-                    if (processingCard.Form.Owner.actionState == Player.ActionState.WaitingDodge)
-                    {
-                        btnUse.SetActive(true);
-                    }
-                    else
-                    {
-                        btnUse.SetActive(false);
-                    }
-                }
-                else if (processingCard is HolyGrail)
-                {
-                    if (processingCard.Form.Owner.actionState == Player.ActionState.WaitingBoD)
-                    {
-                        btnUse.SetActive(true);
-                    }
-                    else if (processingCard.Form.Owner.actionState == Player.ActionState.Free
-                        && processingCard.Form.Owner.CurrentHealth < processingCard.Form.Owner.MaxHealth)
-                    {
-                        btnUse.SetActive(true);
-                    }
-                }
-                else if (processingCard is CommandSeal)
-                {
-                    if (processingCard.Form.Owner.actionState == Player.ActionState.WaitingBoD)
-                    {
-                        btnUse.SetActive(true);
-                    }
-                    else if (processingCard.Form.Owner.actionState == Player.ActionState.Free
-                        && !processingCard.Form.Owner.CommandSeal)
-                    {
-                        btnUse.SetActive(true);
-                    }
-                }
-                else if (processingCard.Form.CardData.Type == Card.CardType.Weapon ||
-                    processingCard.Form.CardData.Type == Card.CardType.Armor ||
-                    processingCard.Form.CardData.Type == Card.CardType.MinusVehicle ||
-                    processingCard.Form.CardData.Type == Card.CardType.PlusVehicle)
-                {
-                    if (processingCard.Form.Owner.actionState == Player.ActionState.Free)
-                    {
-                        btnUse.SetActive(true);
-                    }
-                }
+                //else if (processingCard is Attack || processingCard is MagicAttack)
+                //{
+                //    if (!processingCard.Form.Owner.MainAttack
+                //        && processingCard.Form.Owner.actionState == Player.ActionState.Free)
+                //    {
+                //        btnUse.SetActive(true);
+                //    }
+                //    else
+                //    {
+                //        btnUse.SetActive(false);
+                //    }
+                //}
+                //else if (processingCard is Dodge)
+                //{
+                //    if (processingCard.Form.Owner.actionState == Player.ActionState.WaitingDodge)
+                //    {
+                //        btnUse.SetActive(true);
+                //    }
+                //    else
+                //    {
+                //        btnUse.SetActive(false);
+                //    }
+                //}
+                //else if (processingCard is HolyGrail)
+                //{
+                //    if (processingCard.Form.Owner.actionState == Player.ActionState.WaitingBoD)
+                //    {
+                //        btnUse.SetActive(true);
+                //    }
+                //    else if (processingCard.Form.Owner.actionState == Player.ActionState.Free
+                //        && processingCard.Form.Owner.CurrentHealth < processingCard.Form.Owner.MaxHealth)
+                //    {
+                //        btnUse.SetActive(true);
+                //    }
+                //}
+                //else if (processingCard is CommandSeal)
+                //{
+                //    if (processingCard.Form.Owner.actionState == Player.ActionState.WaitingBoD)
+                //    {
+                //        btnUse.SetActive(true);
+                //    }
+                //    else if (processingCard.Form.Owner.actionState == Player.ActionState.Free
+                //        && !processingCard.Form.Owner.CommandSeal)
+                //    {
+                //        btnUse.SetActive(true);
+                //    }
+                //}
+                //else if (processingCard.Form.CardData.Type == Card.CardType.Weapon ||
+                //    processingCard.Form.CardData.Type == Card.CardType.Armor ||
+                //    processingCard.Form.CardData.Type == Card.CardType.MinusVehicle ||
+                //    processingCard.Form.CardData.Type == Card.CardType.PlusVehicle)
+                //{
+                //    if (processingCard.Form.Owner.actionState == Player.ActionState.Free)
+                //    {
+                //        btnUse.SetActive(true);
+                //    }
+                //}
                 else
                 {
                     btnUse.SetActive(false);
@@ -206,15 +214,7 @@ public class Game : MonoBehaviour
         busy[4] = false;
         busy[5] = false;
 
-        //Draw 4 cards starting for each player
-        //DrawXCard(4, myPlayer);
-        //DrawXCard(4, oppPlayer);
         StartCoroutine(Starting(temp));
-        //myPlayer.DrawPhase += DrawCard;
-        //myPlayer.ChangePhase += ChangePhase;
-        //oppPlayer.DrawPhase += DrawCard;
-        //oppPlayer.ChangePhase += ChangePhase;
-
     }
 
     // Update is called once per frame
@@ -237,6 +237,8 @@ public class Game : MonoBehaviour
             {
                 p.game = this;
                 playerList.Add(p);
+                DrawXCard(4, p);
+                yield return new WaitForSeconds(0.1f);
             }
             else
             {
@@ -246,30 +248,42 @@ public class Game : MonoBehaviour
 
         foreach (Player p in playerList)
         {
-            DrawXCard(4, p);
-            //if (p.AutoAI)
-            //{
-            //    Avalon avalon = new Avalon(Card.CardSuit.Heart, Card.CardNumber.Eight, Card.CardState.Equipment, p, this);
-            //    CardList.Add(avalon);
-            //    avalon.Form.FaceUp = true;
-            //    avalon.Form.Active = true;
-            //    avalon.Form.Owner = p;
-            //    avalon.UseCard();
-            //}
-            yield return new WaitForSeconds(0.1f);
+            
+            if (p.AutoAI)
+            {
+                //SaberArmor avalon = new SaberArmor(Card.CardSuit.Heart, Card.CardNumber.Eight, Card.CardState.Equipment, p, this);
+                //CardList.Add(avalon);
+                //avalon.Form.FaceUp = true;
+                //avalon.Form.Active = true;
+                //avalon.Form.Owner = p;
+                //avalon.UseCard();
+            }
+            else
+            {
+                //PrelatiSpellbook claren = new PrelatiSpellbook(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.Equipment, p, this);
+                //CardList.Add(claren);
+                //claren.Form.FaceUp = true;
+                //claren.Form.Active = true;
+                //claren.Form.Owner = p;
+                //claren.UseCard();
+            }
+            //yield return new WaitForSeconds(0.1f);
         }
         //Determine who goes first
         playerTurn = myPlayer;
         playerTurn.Turn = Player.PlayerTurn.Beginning;
     }
+
     public void DrawCard()
     {
         DrawXCard(2, playerTurn);
     }
+
     public void DrawOneCard()
     {
         DrawXCard(1, playerTurn);
     }
+
     public void DrawXCard(int number, Player player)
     {
         if (number == 0) return;
@@ -292,7 +306,16 @@ public class Game : MonoBehaviour
         CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Six, Card.CardState.None, null, this));
         CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, null, this));
         CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
-
+        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Five, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Four, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Diamond, Card.CardNumber.Jack, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Diamond, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Six, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, null, this));
+        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
 
         CardList.Add(new MagicAttack(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
         CardList.Add(new MagicAttack(Card.CardSuit.Club, Card.CardNumber.Five, Card.CardState.None, null, this));
@@ -305,10 +328,13 @@ public class Game : MonoBehaviour
         CardList.Add(new MagicAttack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, null, this));
         CardList.Add(new MagicAttack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
 
+
+
         //CardList.Add(new BerserCar(Card.CardSuit.Diamond, Card.CardNumber.Eight, Card.CardState.None, null, this));
         //CardList.Add(new GaeBuidhe(Card.CardSuit.Diamond, Card.CardNumber.Eight, Card.CardState.None, null, this));
         //CardList.Add(new GilgameshArmor(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Hrunting(Card.CardSuit.Heart, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        //CardList.Add(new BerserkerArmor(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        //CardList.Add(new Hrunting(Card.CardSuit.Heart, Card.CardNumber.Eight, Card.CardState.None, null, this));
         //CardList.Add(new KanshouBakuya(Card.CardSuit.Heart, Card.CardNumber.Eight, Card.CardState.None, null, this));
         //CardList.Add(new Monohoshizao(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
         //CardList.Add(new Pegasus(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
@@ -317,16 +343,26 @@ public class Game : MonoBehaviour
         //CardList.Add(new PrelatiSpellbook(Card.CardSuit.Spade, Card.CardNumber.Eight, Card.CardState.None, null, this));
         //CardList.Add(new Avalon(Card.CardSuit.Heart, Card.CardNumber.Eight, Card.CardState.None, null, this));
         //CardList.Add(new SaberArmor(Card.CardSuit.Spade, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        //CardList.Add(new Ea(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        //CardList.Add(new AestusEstus(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        //CardList.Add(new AxeSword(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        //CardList.Add(new Excalibur(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        //CardList.Add(new Clarent(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        //CardList.Add(new ThomsonContender(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        //CardList.Add(new GordiusWheel(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        //CardList.Add(new DivineBull(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
 
-
-        CardList.Add(new AestusEstus(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
-        CardList.Add(new AestusEstus(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
-        CardList.Add(new AestusEstus(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
-        CardList.Add(new AestusEstus(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
-        CardList.Add(new AestusEstus(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
-        CardList.Add(new AestusEstus(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
-        CardList.Add(new AestusEstus(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
-        CardList.Add(new AestusEstus(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
 
         //CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
         //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Four, Card.CardState.None, null, this));
@@ -336,21 +372,29 @@ public class Game : MonoBehaviour
         //CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Seven, Card.CardState.None, null, this));
         //CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Ten, Card.CardState.None, null, this));
         //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Four, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Club, Card.CardNumber.Two, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Ten, Card.CardState.None, null, this));
+        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
 
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
 
-        CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal1", null, this));
-        CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal2", null, this));
-        CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal3", null, this));
-        CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal4", null, this));
-        CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal5", null, this));
-        CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal6", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal1", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal2", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal3", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal4", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal5", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal6", null, this));
 
         CardList.Shuffle();
     }
@@ -380,11 +424,28 @@ public class Game : MonoBehaviour
         if (CancelClick != null) CancelClick.Invoke();
     }
 
+    public int GetFreeTask()
+    {
+        for (int i = 0; i < busy.Count(); i++)
+        {
+            if (!busy[i]) return i;
+        }
+        return -1;
+    }
+
+    public int GetBusyTask()
+    {
+        for (int i = busy.Count() - 1; i >= 0; i--)
+        {
+            if (busy[i]) return i;
+        }
+        return -1;
+    }
+
     public virtual void PilesCollect()
     {
         StartCoroutine(Collect());
     }
-
     IEnumerator Collect()
     {
         yield return new WaitForSeconds(1);
@@ -419,36 +480,20 @@ public class Game : MonoBehaviour
     {
         StartCoroutine(AttackAction(number, source, victim, physical));
     }
-
-    public int GetFreeTask()
-    {
-        for (int i = 0; i < busy.Count(); i++)
-        {
-            if (!busy[i]) return i;
-        }
-        return -1;
-    }
-
-    public int GetBusyTask()
-    {
-        for (int i = busy.Count()-1; i >= 0; i--)
-        {
-            if (busy[i]) return i;
-        }
-        return -1;
-    }
-
     public IEnumerator AttackAction(int number, Player source, Player victim, bool physical)
     {
         //while (Busy || Busy2) yield return new WaitForSeconds(0.1f);
         int i = GetFreeTask();
         int j = GetBusyTask();
+        DamageType dmgType = DamageType.Physical;
+        if (!physical) dmgType = DamageType.Magical;
         //Boolean task = busy[GetFreeTask()];
         Debug.Log(GetFreeTask());
         busy[i] = true;
-        if (source.AttackDamageModifier != null) StartCoroutine(source.AttackDamageModifier(number, source, victim));
-        Debug.Log("Attack Damage Modifier");
+        if (source.AttackDamageModifier != null) StartCoroutine(source.AttackDamageModifier(number, source, victim, dmgType));
+        Debug.Log("Source Attack Damage Modifier");
         while (busy[i]) yield return new WaitForSeconds(0.1f);
+        if (victim.lastDamageCard != null && victim.lastDamageCard.LossOfHealth) dmgType = DamageType.LossHealth;
         busy[i] = true;
         if (source.BeforeAttack != null) StartCoroutine(source.BeforeAttack(number, source, victim));
         Debug.Log("Before Attack");
@@ -461,30 +506,41 @@ public class Game : MonoBehaviour
         if (!victim.IsDodge)
         {
             busy[i] = true;
-            if (victim.DamageCalculation != null) StartCoroutine(victim.DamageCalculation(number, source, victim));
+            if (victim.BeforeDamageCalculation != null) StartCoroutine(victim.BeforeDamageCalculation(number, source, victim, dmgType));
+            Debug.Log("Damage Calculation");
+            while (busy[i]) yield return new WaitForSeconds(0.1f);
+            busy[i] = true;
+            if (victim.DamageCalculation != null) StartCoroutine(victim.DamageCalculation(number, source, victim, dmgType));
             Debug.Log("Damage Calculation");
             while (busy[i]) yield return new WaitForSeconds(0.1f);
             number = victim.DamageTaken;
-            if (!physical)
-            {
-                busy[i] = true;
-                if (source.CauseMagicDamage != null) StartCoroutine(source.CauseMagicDamage(number, source, victim));
-                Debug.Log("Cause Magic Damage");
-                while (busy[i]) yield return new WaitForSeconds(0.1f);
-                busy[i] = true;
-                if (victim.TakeMagicDamage != null) StartCoroutine(victim.TakeMagicDamage(number, source, victim));
-                Debug.Log("Take Magic Damage");
-            }
-            else
-            {
-                busy[i] = true;
-                if (source.CausePhysicDamage != null) StartCoroutine(source.CausePhysicDamage(number, source, victim));
-                Debug.Log("Cause Physic Damage");
-                while (busy[i]) yield return new WaitForSeconds(0.1f);
-                busy[i] = true;
-                if (victim.TakePhysicDamage != null) StartCoroutine(victim.TakePhysicDamage(number, source, victim));
-                Debug.Log("Take Physic Damage");
-            }
+            busy[i] = true;
+            if (source.CauseDamage != null) StartCoroutine(source.CauseDamage(number, source, victim, dmgType));
+            Debug.Log("Cause Damage");
+            while (busy[i]) yield return new WaitForSeconds(0.1f);
+            busy[i] = true;
+            if (victim.TakeDamage != null) StartCoroutine(victim.TakeDamage(number, source, victim, dmgType));
+            Debug.Log("Take Damage");
+            //if (!physical)
+            //{
+            //    busy[i] = true;
+            //    if (source.CauseMagicDamage != null) StartCoroutine(source.CauseMagicDamage(number, source, victim));
+            //    Debug.Log("Cause Magic Damage");
+            //    while (busy[i]) yield return new WaitForSeconds(0.1f);
+            //    busy[i] = true;
+            //    if (victim.TakeMagicDamage != null) StartCoroutine(victim.TakeMagicDamage(number, source, victim));
+            //    Debug.Log("Take Magic Damage");
+            //}
+            //else
+            //{
+            //    busy[i] = true;
+            //    if (source.CausePhysicDamage != null) StartCoroutine(source.CausePhysicDamage(number, source, victim));
+            //    Debug.Log("Cause Physic Damage");
+            //    while (busy[i]) yield return new WaitForSeconds(0.1f);
+            //    busy[i] = true;
+            //    if (victim.TakePhysicDamage != null) StartCoroutine(victim.TakePhysicDamage(number, source, victim));
+            //    Debug.Log("Take Physic Damage");
+            //}
             while (busy[i]) yield return new WaitForSeconds(0.1f);
             busy[i] = true;
             if (source.EndAttack != null) StartCoroutine(source.EndAttack(number, source, victim));
@@ -505,39 +561,70 @@ public class Game : MonoBehaviour
         if (j > 0) busy[j] = false;
         yield return new WaitForSeconds(0.1f);
     }
-
     public IEnumerator InflictDamage(int number, Player source, Player victim, bool physical)
     {
         int j = GetBusyTask();
         int i = GetFreeTask();
+
+        DamageType dmgType = DamageType.Physical;
+        if (!physical) dmgType = DamageType.Magical;
+
         busy[i] = true;
-        if (source.DamageModifier != null) source.StartCoroutine(source.DamageModifier(number, source, victim));
+        if (source.DamageModifier != null) source.StartCoroutine(source.DamageModifier(number, source, victim, dmgType));
         while (busy[i]) yield return new WaitForSeconds(0.1f);
         busy[i] = true;
-        if (victim.DamageCalculation != null) victim.StartCoroutine(victim.DamageCalculation(number, source, victim));
+        if (victim.BeforeDamageCalculation != null) victim.StartCoroutine(victim.BeforeDamageCalculation(number, source, victim, dmgType));
         while (busy[i]) yield return new WaitForSeconds(0.1f);
-        if(physical)
-        {
-            busy[i] = true;
-            if (source.CausePhysicDamage != null) source.StartCoroutine(source.CausePhysicDamage(number, source, victim));
-            while (busy[i]) yield return new WaitForSeconds(0.1f);
-            busy[i] = true;
-            if (victim.TakePhysicDamage != null) victim.StartCoroutine(victim.TakePhysicDamage(number, source, victim));
-            while (busy[i]) yield return new WaitForSeconds(0.1f);
-        }
-        else
-        {
-            busy[i] = true;
-            if (source.CauseMagicDamage != null) source.StartCoroutine(source.CauseMagicDamage(number, source, victim));
-            while (busy[i]) yield return new WaitForSeconds(0.1f);
-            busy[i] = true;
-            if (victim.TakeMagicDamage != null) victim.StartCoroutine(victim.TakeMagicDamage(number, source, victim));
-            while (busy[i]) yield return new WaitForSeconds(0.1f);
-        }
+        busy[i] = true;
+        if (victim.DamageCalculation != null) victim.StartCoroutine(victim.DamageCalculation(number, source, victim, dmgType));
+        while (busy[i]) yield return new WaitForSeconds(0.1f);
+        busy[i] = true;
+        if (source.CauseDamage != null) source.StartCoroutine(source.CauseDamage(number, source, victim, dmgType));
+        while (busy[i]) yield return new WaitForSeconds(0.1f);
+        busy[i] = true;
+        if (victim.TakeDamage != null) victim.StartCoroutine(victim.TakeDamage(number, source, victim, dmgType));
+        while (busy[i]) yield return new WaitForSeconds(0.1f);
+        //if(physical)
+        //{
+        //    busy[i] = true;
+        //    if (source.CausePhysicDamage != null) source.StartCoroutine(source.CausePhysicDamage(number, source, victim));
+        //    while (busy[i]) yield return new WaitForSeconds(0.1f);
+        //    busy[i] = true;
+        //    if (victim.TakePhysicDamage != null) victim.StartCoroutine(victim.TakePhysicDamage(number, source, victim));
+        //    while (busy[i]) yield return new WaitForSeconds(0.1f);
+        //}
+        //else
+        //{
+        //    busy[i] = true;
+        //    if (source.CauseMagicDamage != null) source.StartCoroutine(source.CauseMagicDamage(number, source, victim));
+        //    while (busy[i]) yield return new WaitForSeconds(0.1f);
+        //    busy[i] = true;
+        //    if (victim.TakeMagicDamage != null) victim.StartCoroutine(victim.TakeMagicDamage(number, source, victim));
+        //    while (busy[i]) yield return new WaitForSeconds(0.1f);
+        //}
 
         if(j>0)busy[j] = false;
         yield return new WaitForSeconds(0.1f);
     }
+    public void Duel(int number, Player source, Player victim)
+    {
+        StartCoroutine(DuelAction(number, source, victim));
+        
+    }
+    public IEnumerator DuelAction(int number, Player source, Player victim)
+    {
+        int i = GetFreeTask();
+        int j = GetBusyTask();
+
+        DamageType dmgType = DamageType.LossHealth;
+        busy[i] = true;
+        if (victim.Duel != null) victim.StartCoroutine(victim.Duel(number, source, victim, dmgType));
+        while (busy[i]) yield return new WaitForSeconds(0.1f);
+
+        if (j >= 0) busy[j] = false;
+        yield return new WaitForSeconds(0.1f);
+    }
+
     public void ChangePhase()
     {
         //playerTurn = myPlayer;
@@ -694,7 +781,7 @@ public class Game : MonoBehaviour
     }
     public IEnumerator JudgmentChangeByRound(Player start, CardForm cf)
     {
-        bool freeTask = busy[GetFreeTask()];
+        int free = GetFreeTask();
         int currentIndex = -1;
         for (int i = 0; i < playerList.Count; i++)
         {
@@ -702,8 +789,8 @@ public class Game : MonoBehaviour
         }
         //int startIndex = currentIndex;
 
-        if (playerList[currentIndex].OnJudgment != null) { freeTask = true; playerList[currentIndex].StartCoroutine(playerList[currentIndex].OnJudgment()); }
-        while (freeTask) yield return new WaitForSeconds(0.1f);
+        if (playerList[currentIndex].OnJudgment != null) { busy[free] = true; playerList[currentIndex].StartCoroutine(playerList[currentIndex].OnJudgment()); }
+        while (busy[free]) yield return new WaitForSeconds(0.1f);
 
         for (int i = 0; i < playerList.Count; i++)
         {
@@ -715,35 +802,23 @@ public class Game : MonoBehaviour
                 border.enabled = true;
             }
 
-            if (playerList[currentIndex].BeforeJudgmentTakeEffect != null) { freeTask = true; playerList[currentIndex].StartCoroutine(playerList[currentIndex].BeforeJudgmentTakeEffect()); }
-            while (freeTask) yield return new WaitForSeconds(0.1f);
+            if (playerList[currentIndex].BeforeJudgmentTakeEffect != null) { busy[free] = true; playerList[currentIndex].StartCoroutine(playerList[currentIndex].BeforeJudgmentTakeEffect()); }
+            while (busy[free]) yield return new WaitForSeconds(0.1f);
 
             #region JudgmentChange of Character 1 Ability Check
             if (playerList[currentIndex].Character1 != null)
             {
-                foreach (CharacterAbility ability in playerList[currentIndex].Character1.Ability)
+                busy[free] = true;
+                Debug.Log("Judgment Change - Close task " + free);
+                StartCoroutine(playerList[currentIndex].Character1.AbilityActive(CharacterAbility.AbilityForm.JudgmentChange, 0, playerList[currentIndex], playerList[currentIndex], DamageType.Physical));
+                while (busy[free]) yield return new WaitForSeconds(0.1f);
+                if (playerList[currentIndex].Character1 is Illya && playerList[currentIndex].Character1.Ability[2].Used)
                 {
-                    if (ability != null)
-                    {
-                        if (ability.Form == CharacterAbility.AbilityForm.JudgmentChange && ability.Status)
-                        {
-                            //Invoke ability or effect that happend before the judgment take an effect
-                            freeTask = true;
-                            StartCoroutine(ability.Ability(0, playerList[currentIndex], playerList[currentIndex]));
-
-                            //Use Busy2 to stop the queuing
-                            while (freeTask) yield return new WaitForSeconds(0.1f);
-
-                            if (playerList[currentIndex].Character1 is Illya && ability.Used)
-                            {
-                                if (border != null) border.enabled = false;
-                                ability.Used = false;
-                                StopCoroutine(JudgmentTakeEffect(actionAfterJudgment));
-                                PerformJudgment(start, actionAfterJudgment);
-                                yield break;
-                            }
-                        }
-                    }
+                    if (border != null) border.enabled = false;
+                    playerList[currentIndex].Character1.Ability[2].Used = false;
+                    StopCoroutine(JudgmentTakeEffect(actionAfterJudgment));
+                    PerformJudgment(start, actionAfterJudgment);
+                    yield break;
                 }
             }
             #endregion
@@ -751,29 +826,17 @@ public class Game : MonoBehaviour
             #region JudgmentChange of Character 2 Ability Check
             if (playerList[currentIndex].Character2 != null)
             {
-                foreach (CharacterAbility ability in playerList[currentIndex].Character2.Ability)
+                busy[free] = true;
+                Debug.Log("Judgment Change - Close task " + free);
+                StartCoroutine(playerList[currentIndex].Character2.AbilityActive(CharacterAbility.AbilityForm.JudgmentChange, 0, playerList[currentIndex], playerList[currentIndex], DamageType.Physical));
+                while (busy[free]) yield return new WaitForSeconds(0.1f);
+                if (playerList[currentIndex].Character2 is Illya && playerList[currentIndex].Character2.Ability[2].Used)
                 {
-                    if (ability != null)
-                    {
-                        if (ability.Form == CharacterAbility.AbilityForm.JudgmentChange && ability.Status)
-                        {
-                            //Invoke ability or effect that happend before the judgment take an effect
-                            freeTask = true;
-                            StartCoroutine(ability.Ability(0, playerList[currentIndex], playerList[currentIndex]));
-
-                            //Use Busy2 to stop the queuing
-                            while (freeTask) yield return new WaitForSeconds(0.1f);
-
-                            if (playerList[currentIndex].Character2 is Illya && ability.Used)
-                            {
-                                if (border != null) border.enabled = false;
-                                ability.Used = false;
-                                StopCoroutine(JudgmentTakeEffect(actionAfterJudgment));
-                                PerformJudgment(start, actionAfterJudgment);
-                                yield break;
-                            }
-                        }
-                    }
+                    if (border != null) border.enabled = false;
+                    playerList[currentIndex].Character2.Ability[2].Used = false;
+                    StopCoroutine(JudgmentTakeEffect(actionAfterJudgment));
+                    PerformJudgment(start, actionAfterJudgment);
+                    yield break;
                 }
             }
             #endregion

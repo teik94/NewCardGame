@@ -17,35 +17,39 @@ public class CommandSeal : CardForm
         : base(new Card(Card.CardType.Basic, "Command Seal", asset, "Used to increase your attack damage by one or save you one unit health when you are on the brink of death.",
         suit, number, state, owner), g)
     {
-
+        this.UseCondition += useCondition;
     }
 
-    public void PerformIncreaseDam()
+    private bool useCondition()
     {
-        Player source = this.Form.Owner;
-        mainAction = delegate()
+        Player owner = this.Form.Owner;
+        if (owner != null && owner.actionState == Player.ActionState.Free && !owner.CommandSeal)
         {
-            source.CommandSeal = true;
-            game.PilesCollect();
-        };
+            return true;
+        }
+        else if (owner != null && owner.actionState == Player.ActionState.WaitingBoD)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
-    public void PerformSaving()
-    {
-        
-    }
+
 
     public override void UseCard()
     {
         if(this.Form.Owner.actionState == Player.ActionState.Free)
         {
-            PerformIncreaseDam();
+            PerformCSIncreaseDam();
         }
         if (this.Form.Owner.actionState == Player.ActionState.WaitingBoD)
         {
             PerformSaving();
         }
-        base.UseCard();
+        //base.UseCard();
     }
 }
 

@@ -19,7 +19,21 @@ public class MinusVehicle : CardForm
         Card.CardNumber number, Card.CardState state, Player owner, Game g)
         : base(new Card(Card.CardType.MinusVehicle, name, asset, ability, suit, number, state, owner), g)
     {
+        this.UseCondition += useCondition;
 	}
+
+    public virtual bool useCondition()
+    {
+        Player owner = this.Form.Owner;
+        if (owner != null && owner.actionState == Player.ActionState.Free)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
     public override void Equipped()
     {

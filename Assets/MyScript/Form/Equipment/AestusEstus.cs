@@ -12,8 +12,7 @@ public class AestusEstus : Weapon
     public AestusEstus(Card.CardSuit suit, Card.CardNumber number, Card.CardState state, Player owner, Game g)
         : base("Aestus Estus", "AestusEstus", "", 2, suit, number, state, owner, g)
     {
-        this.CausePhysicDamage += AestusDamage;
-        this.CauseMagicDamage += AestusDamage;
+        this.CauseDamage += AestusDamage;
 	}
 
     public override void Ability()
@@ -23,7 +22,7 @@ public class AestusEstus : Weapon
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 
@@ -43,7 +42,7 @@ public class AestusEstus : Weapon
         base.UnEquipped();
     }
 
-    public IEnumerator AestusDamage(int number, Player source, Player victim)
+    public IEnumerator AestusDamage(int number, Player source, Player victim, Game.DamageType dmgType)
     {
         int busy = game.GetBusyTask();
         int free = game.GetFreeTask();

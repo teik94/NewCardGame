@@ -21,7 +21,7 @@ public class GaeBuidhe : Weapon
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 

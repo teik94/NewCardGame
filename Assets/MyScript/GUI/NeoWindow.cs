@@ -212,13 +212,11 @@ public class Window
         get { return window.result; }
         set { window.result = value; }
     }
-
     public Vector2 Position
     {
         get { return window.position; }
         set { window.position = value; }
     }
-
     public string Title
     {
         get { return window.title; }

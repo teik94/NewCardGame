@@ -84,11 +84,14 @@
      <Compile Include="Assets\MyScript\Form\Equipment\Avalon.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\AxeSword.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\BerserCar.cs" />
+     <Compile Include="Assets\MyScript\Form\Equipment\BerserkerArmor.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\Clarent.cs" />
+     <Compile Include="Assets\MyScript\Form\Equipment\DivineBull.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\Ea.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\Excalibur.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\GaeBuidhe.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\GilgameshArmor.cs" />
+     <Compile Include="Assets\MyScript\Form\Equipment\GordiusWheel.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\Hrunting.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\KanshouBakuya.cs" />
      <Compile Include="Assets\MyScript\Form\Equipment\Monohoshizao.cs" />

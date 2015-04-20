@@ -21,7 +21,7 @@ public class GilgameshArmor : Armor
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 

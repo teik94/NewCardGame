@@ -18,25 +18,26 @@ public class Dodge : CardForm
         : base(new Card(Card.CardType.Basic, "DODGE", "Dodge", "Used to dodge from an attack.",
         suit, number, state, owner),g)
     {
-
+        this.UseCondition += useCondition;
     }
 
-    public void PerformDodge()
+    private bool useCondition()
     {
-        Player attacking = this.Form.Owner.targetPlayer;
-        Player source = this.Form.Owner;
-        this.mainAction = delegate()
+        Player owner = this.Form.Owner;
+        if (owner != null && owner.actionState == Player.ActionState.WaitingDodge)
         {
-            if (attacking.EndAttack != null) attacking.EndAttack.Invoke(0, attacking, source);
-            if (source.EndAttack != null) source.EndAttack.Invoke(0, attacking, source);
-            game.PilesCollect();
-        };
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
     public override void UseCard()
     {
         PerformDodge();
-        base.UseCard();
+        //base.UseCard();
     }
 }
 

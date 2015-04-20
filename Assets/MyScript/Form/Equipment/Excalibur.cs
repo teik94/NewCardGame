@@ -9,10 +9,25 @@ using UnityEngine.EventSystems;
 public class Excalibur : Weapon
 {
     public Excalibur(Card.CardSuit suit, Card.CardNumber number, Card.CardState state, Player owner, Game g)
-        : base("Excalibur", "Excalibur", "", 2, suit, number, state, owner, g)
+        : base("Excalibur", "Excalibur 1", "", 2, suit, number, state, owner, g)
     {
-
+        this.BeforeAttack += ExcaliburEffect;
 	}
+
+    public System.Collections.IEnumerator ExcaliburEffect(int number, Player source, Player victim)
+    {
+        int busy = game.GetBusyTask();
+        if(victim.lastDamageCard != null)
+        {
+            if(victim.lastDamageCard.Form.CardData.Suit == Card.CardSuit.Heart 
+                || victim.lastDamageCard.Form.CardData.Suit == Card.CardSuit.Diamond)
+            {
+                victim.AdditionDodge += 1;
+            }
+        }
+        if (busy >= 0) game.busy[busy] = false;
+        yield return new WaitForSeconds(0.1f);
+    }
 
     public override void Ability()
     {
@@ -21,7 +36,7 @@ public class Excalibur : Weapon
 
     public override void UseCard()
     {
-        Equipped();
+        //Equipped();
         base.UseCard();
     }
 

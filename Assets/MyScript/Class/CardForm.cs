@@ -10,29 +10,46 @@ using System.Collections;
 public class CardForm
 {
     public CardController Form;
-    public Guid CardID;
+    public Guid CardID
+    {
+        get { return Form.CardData.CardID; }
+        set { Form.CardData.CardID = value; }
+    }
     public Game game;
     public float MoveSpeed = 1500f;
+
+    public int AbilityUsed = 0;
+    public int AbilityUseMax = 99;
+    public bool LossOfHealth = false;
 
     public delegate IEnumerator CardEffectDelete(int number, Player source, Player victim);
     public CardEffectDelete AttackAction = null;
     public CardEffectDelete DodgeAction = null;
-    public CardEffectDelete CauseMagicDamage = null;
-    public CardEffectDelete CausePhysicDamage = null;
-    public CardEffectDelete TakeMagicDamage = null;
-    public CardEffectDelete TakePhysicDamage = null;
-    public CardEffectDelete DamageIncrease = null;
-    public CardEffectDelete DamageDecrease = null;
+    public CardEffectDelete BeforeAttack = null;
+    public CardEffectDelete BeforeAttacked = null;
     public CardEffectDelete DrawCard = null;
     public CardEffectDelete Heal = null;
+    public CardEffectDelete AdditionAttack = null;
+    public CardEffectDelete JudgmentPhase = null;
+    public CardEffectDelete BeginingOfTurn = null;
+    public CardEffectDelete DrawPhase = null;
+    public CardEffectDelete EndPhase = null;
 
+    public delegate IEnumerator CardDamageDelete(int number, Player source, Player victim, Game.DamageType dmgType);
+    public CardDamageDelete DamageIncrease = null;
+    public CardDamageDelete DamageDecrease = null;
+    public CardDamageDelete CauseDamage = null;
+    public CardDamageDelete TakeDamage = null;
+
+    public delegate bool ConditionDelegate();
+    public ConditionDelegate UseCondition = null;
     
     public CardForm(Card card, Game g)
     {
         //Card atkCard = new Card(Card.CardType.Basic, "ATTACK", "attack1", "Used to attack one player.",
         //    suit, number, state, owner);
         this.Form = new CardController(card, 0, 0, 50, 70);
-        this.CardID = Form.CardData.CardID;
+        //this.CardID = Form.CardData.CardID;
         this.game = g;
         this.Form.OnClick += OnMouseClick;
         this.Form.OnMouseMove += OnMouseMove;
@@ -244,13 +261,13 @@ public class CardForm
     public Action mainAction = null;
     public virtual void UseCard()
     {
+        this.Form.Active = true;
         Vector3 position = game.tempPanel.transform.localPosition;
         if (this.Form.Owner == game.myPlayer)
         {
             game.btnCancel.SetActive(false);
             game.CancelClick = null;
         }
-        this.Form.Active = true;
         Action action = delegate()
         {
             this.Form.UpdateLastInteract();
@@ -261,6 +278,30 @@ public class CardForm
             RefreshPiles();
             RefreshHand(game.myPlayer);
             if (mainAction!=null) mainAction.Invoke();
+            mainAction = null;
+        };
+        this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
+    }
+
+    public void UseCardAnimation()
+    {
+        this.Form.Active = true;
+        Vector3 position = game.tempPanel.transform.localPosition;
+        if (this.Form.Owner == game.myPlayer)
+        {
+            game.btnCancel.SetActive(false);
+            game.CancelClick = null;
+        }
+        Action action = delegate()
+        {
+            this.Form.UpdateLastInteract();
+            this.Form.Owner = null;
+            this.Form.FaceUp = true;
+            this.Form.CardData.State = Card.CardState.Using;
+            this.Form.State = Card.CardState.Using;
+            RefreshPiles();
+            RefreshHand(game.myPlayer);
+            if (mainAction != null) mainAction.Invoke();
             mainAction = null;
         };
         this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
@@ -368,22 +409,13 @@ public class CardForm
         };
     }
 
-    public void PerformAttack(GameObject panelClick)
+    public virtual void PerformAttack(GameObject panelClick)
     {
         //Set All Player within attacking become unselectable
         bool physical = true;
         if (this is MagicAttack)
         {
             physical = false;
-            Player owner = this.Form.Owner;
-            if (owner != null)
-            {
-                Equipment equip = owner.Weapon.GetComponent<Equipment>();
-                if (equip.Form is PrelatiSpellbook)
-                {
-                    owner.DamageIncrease += 2;
-                }
-            }
         }
 
         foreach (Player player in game.playerList)
@@ -415,6 +447,134 @@ public class CardForm
             game.Attack(1, source, target, physical);
         };
         this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
+    }
+
+    public virtual void PerformDodge()
+    {
+        Player attacking = this.Form.Owner.targetPlayer;
+        Player source = this.Form.Owner;
+        this.mainAction = delegate()
+        {
+            if (attacking.EndAttack != null) attacking.EndAttack.Invoke(0, attacking, source);
+            if (source.EndAttack != null) source.EndAttack.Invoke(0, attacking, source);
+            if (game.GetBusyTask() < 0) game.PilesCollect();
+        };
+        UseCardAnimation();
+    }
+
+    public virtual void PerformCSIncreaseDam()
+    {
+        Player source = this.Form.Owner;
+        mainAction = delegate()
+        {
+            source.CommandSeal = true;
+            if(game.GetBusyTask() < 0)game.PilesCollect();
+        };
+        UseCardAnimation();
+    }
+
+    public virtual void PerformHealing()
+    {
+        Player source = this.Form.Owner;
+        mainAction = delegate()
+        {
+            if (source.Healing != null) source.StartCoroutine(source.Healing(1, source, source));
+            if (game.GetBusyTask() < 0) game.PilesCollect();
+        };
+        UseCardAnimation();
+    }
+
+    public virtual void PerformSaving()
+    {
+        Player source = this.Form.Owner;
+        mainAction = delegate()
+        {
+            if (source.Healing != null) source.StartCoroutine(source.Healing(1, source, source));
+            if (game.GetBusyTask() < 0) game.PilesCollect();
+        };
+        UseCardAnimation();
+    }
+
+    public virtual void RespondDuel()
+    {
+        Player source = this.Form.Owner;
+        source.actionState = Player.ActionState.OnDuel;
+        this.mainAction = delegate()
+        {
+            if (game.GetBusyTask() < 0) game.PilesCollect();
+        };
+        UseCardAnimation();
+    }
+
+    public virtual void SelectDuelTarget()
+    {
+        //Highlight All Player
+        List<GameObject> panelList = new List<GameObject>();
+        foreach (Player p in game.playerList)
+        {
+            if (p == game.myPlayer) continue;
+            else panelList.Add(p.gameObject);
+        }
+
+        //Set click event for each highlighted player
+        foreach (GameObject panel in panelList)
+        {
+            GameObject zzz = panel;
+            Outline border = panel.GetComponent<Outline>();
+            if (border != null)
+            {
+                border.effectColor = Color.red;
+                border.enabled = true;
+            }
+            EventTrigger et = panel.GetComponent<EventTrigger>();
+            if (et != null)
+            {
+                EventTrigger.Entry entry = new EventTrigger.Entry();
+                entry.eventID = EventTriggerType.PointerClick;
+                entry.callback.AddListener((eventData) => { PerformDuel(zzz); });
+                et.delegates = new System.Collections.Generic.List<EventTrigger.Entry>();
+                et.delegates.Add(entry);
+            }
+        }
+
+        //Cancel Duel
+        game.btnCancel.SetActive(true);
+        game.CancelClick += delegate()
+        {
+            foreach (GameObject panel in panelList)
+            {
+                Outline border = panel.GetComponent<Outline>();
+                if (border != null) border.enabled = false;
+                EventTrigger et = panel.GetComponent<EventTrigger>();
+                if (et != null) et.delegates = null;
+            }
+            game.btnCancel.SetActive(false);
+            game.CancelClick = null;
+        };
+    }
+
+    public virtual void PerformDuel(GameObject playerPanel)
+    {
+        Player source = this.Form.Owner;
+        Player target = playerPanel.GetComponent<Player>();
+
+        mainAction = delegate()
+        {
+            target.lastDamageCard = this;
+            game.Duel(1, source, target);
+        };
+        this.UseCardAnimation();
+
+        foreach (Player player in game.playerList)
+        {
+            GameObject p = player.gameObject;
+            Outline b = p.GetComponent<Outline>();
+            if (b != null) b.enabled = false;
+            EventTrigger et2 = p.GetComponent<EventTrigger>();
+            if (et2 != null) et2.delegates = null;
+        }
+        game.btnCancel.SetActive(false);
+        game.CancelClick = null;
     }
     #endregion
 

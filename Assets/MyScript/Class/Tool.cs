@@ -20,13 +20,36 @@ public class Tool : CardForm
 		NonTimeDelay = 1,
 	}
 	public ToolType Type = ToolType.TimeDelay;
+    private string p1;
+    private string p2;
+    private string p3;
+    private Card.CardSuit suit;
+    private Card.CardNumber number;
+    private Card.CardType state;
+    private ToolType toolType;
+    private Player player;
+    private Game gg;
 
 	public Tool (string name, string asset, string ability, Card.CardSuit suit, 
         Card.CardNumber number, Card.CardState state, ToolType type, Player owner, Game g):
         base(new Card(Card.CardType.Tool, name, asset, ability, suit, number, state, owner), g)
 	{
 		this.Type = type;
+        this.UseCondition += useCondition;
 	}
+
+    public virtual bool useCondition()
+    {
+        Player owner = this.Form.Owner;
+        if (owner.actionState == Player.ActionState.Free)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
 
 	public override void UseCard ()
 	{
