@@ -13,6 +13,7 @@ public class Avalon:Armor
         : base("Avalon", "Avalon", "", suit, number, state, owner, g)
     {
         this.TakeDamage += AvalonTakeDamage;
+        //this.BeginingOfTurn += HealStartTurn;
 	}
 
     public override void Ability()
@@ -52,16 +53,20 @@ public class Avalon:Armor
         base.UnEquipped();
     }
 
-    public void HealStartTurn()
+    public IEnumerator HealStartTurn()
     {
         Player owner = Form.Owner;
         if (owner != null)
         {
             if(owner.CurrentHealth<owner.MaxHealth)
             {
-                owner.Healing.Invoke(1,owner,owner);
+                int busy = game.GetBusyTask();
+                game.busy[busy] = true;
+                owner.StartCoroutine(owner.Healing(1,owner,owner));
+                while (game.busy[busy]) yield return new WaitForSeconds(0.1f);
             }
         }
+        yield return new WaitForSeconds(0.1f);
     }
     int free;
     public IEnumerator AvalonTakeDamage(int number, Player source, Player victim, Game.DamageType dmgType)

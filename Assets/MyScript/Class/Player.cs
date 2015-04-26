@@ -35,7 +35,7 @@ public class Player : MonoBehaviour
 
     public bool DodgeAble = true;
     public bool IsDodge = false;
-    //public bool AdditionDodge = false;
+    public bool IsRespond = false;
     public int AdditionDodge = 1;
     //public int AdditionAttack = 0;
     public bool MainAttack = false;
@@ -45,6 +45,7 @@ public class Player : MonoBehaviour
     public bool DoubleDamage = false;
     public int DamageTaken = 0;
     public bool Attacked = false;
+    public bool Rage = false;
 
     public GameObject Weapon, Armor, PlusVehicle, MinusVehicle;
     //public CardForm myWeapon = null, myArmor = null, myPlusVehicle = null, myMinusvehicle = null;
@@ -57,7 +58,7 @@ public class Player : MonoBehaviour
     public Player targetPlayer;
     public Game game;
 
-    public delegate void PhaseDelegate();
+    public delegate IEnumerator PhaseDelegate();
     public PhaseDelegate ChangePhase = null;
     public PhaseDelegate BeginningOfTurn = null;
     public PhaseDelegate DrawPhase = null;
@@ -70,16 +71,11 @@ public class Player : MonoBehaviour
     public delegate IEnumerator EffectDelegate(int number, Player source, Player victim);
     public EffectDelegate BeforeAttack = null;
     public EffectDelegate BeforeAttacked = null;
-    //public EffectDelegate TakeMagicDamage = null;
-    //public EffectDelegate TakePhysicDamage = null;
-    //public EffectDelegate CauseMagicDamage = null;
-    //public EffectDelegate CausePhysicDamage = null;
     public EffectDelegate Healing = null;
     public EffectDelegate AfterHealing = null;
     public EffectDelegate BrinkOfDeath = null;
     public EffectDelegate EndAttack = null;
     public EffectDelegate HealModifier = null;
-
 
 
     public delegate IEnumerator DamageDelegate(int number, Player source, Player victim, Game.DamageType dmgType);
@@ -90,6 +86,7 @@ public class Player : MonoBehaviour
     public DamageDelegate TakeDamage = null;
     public DamageDelegate CauseDamage = null;
     public DamageDelegate Duel = null;
+    public DamageDelegate Respond = null;
 
     public delegate IEnumerator SequentiallyDelegate();
     public SequentiallyDelegate OnJudgment = null;
@@ -97,9 +94,10 @@ public class Player : MonoBehaviour
     public SequentiallyDelegate AfterJudgmentTakeEffect = null;
     public SequentiallyDelegate Discard = null;
 
+
     public enum ActionState
     {
-        None, Free, WaitingDodge, WaitingTool, WaitingRhoAias, WaitingBoD, WaitingSave, WaitingDiscard,
+        None, Free, WaitingDodgeFromAttack, WaitingDodge, WaitingTool, WaitingRhoAias, WaitingBoD, WaitingSave, WaitingDiscard,
         UseAs, WaitingAttack, WaitingAttackDuel, OnDuel,
     }
 
@@ -124,44 +122,42 @@ public class Player : MonoBehaviour
             turn = value;
             if (turn == PlayerTurn.Beginning)
             {
-                if (BeginningOfTurn != null) BeginningOfTurn.Invoke();
-                //if (ChangePhase != null) ChangePhase.Invoke();
+                if (BeginningOfTurn != null) StartCoroutine(BeginningOfTurn());
             }
             else if (turn == PlayerTurn.Judgment)
             {
-                if (JudgmentPhase != null) JudgmentPhase.Invoke();
-                //if (ChangePhase != null) ChangePhase.Invoke();
+                if (JudgmentPhase != null) StartCoroutine(JudgmentPhase());
             }
             else if (turn == PlayerTurn.Draw)
             {
-                if (DrawPhase != null) DrawPhase.Invoke();
+                if (DrawPhase != null) StartCoroutine(DrawPhase());
             }
             else if (turn == PlayerTurn.Action)
             {
-                if (ActionPhase != null) ActionPhase.Invoke();
+                if (ActionPhase != null) StartCoroutine(ActionPhase());
                 this.actionState = ActionState.Free;
             }
             else if (turn == PlayerTurn.Discard)
             {
-                if (DiscardPhase != null) DiscardPhase.Invoke();
+                if (DiscardPhase != null) StartCoroutine(DiscardPhase());
                 this.actionState = ActionState.None;
             }
             else if (turn == PlayerTurn.End)
             {
-                if (EndPhase != null) EndPhase.Invoke();
+                if (EndPhase != null) StartCoroutine(EndPhase());
             }
             else if (turn == PlayerTurn.OutTurn)
             {
-                MainAttack = false;
+                //MainAttack = false;
             }
-            if (turn != PlayerTurn.Action && turn != PlayerTurn.OutTurn)
-            {
-                System.Threading.Timer time = new System.Threading.Timer(delegate(object sender)
-                {
-                    if (ChangePhase != null) OnWaitingAction += ChangePhase;
-                });
-                time.Change(500, 0);
-            }
+            //if (turn != PlayerTurn.Action && turn != PlayerTurn.OutTurn)
+            //{
+            //    System.Threading.Timer time = new System.Threading.Timer(delegate(object sender)
+            //    {
+            //        if (ChangePhase != null) OnWaitingAction += ChangePhase;
+            //    });
+            //    time.Change(500, 0);
+            //}
         }
     }
 
@@ -181,6 +177,7 @@ public class Player : MonoBehaviour
     {
         Equipment weapon = null;
         if (this.Weapon != null) weapon = this.Weapon.GetComponent<Equipment>();
+        if (weapon != null && weapon.Form != null && weapon.Form.Form.Owner != this) weapon.Form = null;
         if (weapon != null && weapon.Form != null) return weapon.Form;
         else return null;
     }
@@ -188,6 +185,7 @@ public class Player : MonoBehaviour
     {
         Equipment armor = null;
         if (this.Armor != null) armor = this.Armor.GetComponent<Equipment>();
+        if (armor != null && armor.Form != null && armor.Form.Form.Owner != this) armor.Form = null;
         if (armor != null && armor.Form != null) return armor.Form;
         else return null;
     }
@@ -195,6 +193,7 @@ public class Player : MonoBehaviour
     {
         Equipment plus = null;
         if (this.PlusVehicle != null) plus = this.PlusVehicle.GetComponent<Equipment>();
+        if (plus != null && plus.Form != null && plus.Form.Form.Owner != this) plus.Form = null;
         if (plus != null && plus.Form != null) return plus.Form;
         else return null;
     }
@@ -202,8 +201,21 @@ public class Player : MonoBehaviour
     {
         Equipment minus = null;
         if (this.MinusVehicle != null) minus = this.MinusVehicle.GetComponent<Equipment>();
+        if (minus != null && minus.Form != null && minus.Form.Form.Owner != this) minus.Form = null;
         if (minus != null && minus.Form != null) return minus.Form;
         else return null;
+    }
+    public List<CardForm> GetOwnCard()
+    {
+        List<CardForm> list = new List<CardForm>();
+        foreach (CardForm cf in game.CardList)
+        {
+            if(cf.Form.Owner == this)
+            {
+                list.Add(cf);
+            }
+        }
+        return list;
     }
     public void DiscardEquipment(CardForm cf)
     {
@@ -236,6 +248,132 @@ public class Player : MonoBehaviour
     #endregion
 
     #region Event Handler
+    private IEnumerator beginingOfTurn()
+    {
+        int busy = game.GetBusyTask();
+        int free = game.GetFreeTask();
+
+        this.Rage = false;
+        this.MainAttack = false;
+        this.DodgeAble = true;
+        this.IsDodge = false;
+        this.IsRespond = false;
+        this.AdditionDodge = 1;
+        this.MainAttack = false;
+        this.CommandSeal = false;
+        this.DamageIncrease = 0;
+        this.DamageDecrease = 0;
+        this.DoubleDamage = false;
+        this.DamageTaken = 0;
+        this.Attacked = false;
+
+        if (Character1 != null && Character1.BeginningOfTurn != null) { game.busy[free] = true; StartCoroutine(Character1.BeginningOfTurn(0,this, this)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null && Character2.BeginningOfTurn != null) { game.busy[free] = true; StartCoroutine(Character2.BeginningOfTurn(0,this, this)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.BeginningOfTurn, 0, this, this, Game.DamageType.LossHealth)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.BeginningOfTurn, 0, this, this, Game.DamageType.LossHealth)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (busy >= 0) game.busy[busy] = false;
+        yield return new WaitForSeconds(0.5f);
+        game.ChangePhase();
+    }
+
+    private IEnumerator judgmentPhase()
+    {
+        int busy = game.GetBusyTask();
+        int free = game.GetFreeTask();
+
+        if (Character1 != null && Character1.JudgementPhase != null) { game.busy[free] = true; StartCoroutine(Character1.JudgementPhase(0,this, this)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null && Character2.JudgementPhase != null) { game.busy[free] = true; StartCoroutine(Character2.JudgementPhase(0,this, this)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.JudgmentPhase, 0, this, this, Game.DamageType.LossHealth)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.JudgmentPhase, 0, this, this, Game.DamageType.LossHealth)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (busy >= 0) game.busy[busy] = false;
+        yield return new WaitForSeconds(0.5f);
+        game.ChangePhase();
+    }
+
+    private IEnumerator drawPhase()
+    {
+        int busy = game.GetBusyTask();
+        int free = game.GetFreeTask();
+
+        if (Character1 != null && Character1.DrawPhase != null) { game.busy[free] = true; StartCoroutine(Character1.DrawPhase(0,this, this)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null && Character2.DrawPhase != null) { game.busy[free] = true; StartCoroutine(Character2.DrawPhase(0,this, this)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.DrawPhase, 0, this, this, Game.DamageType.LossHealth)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.DrawPhase, 0, this, this, Game.DamageType.LossHealth)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        game.DrawCard();
+
+        if (busy >= 0) game.busy[busy] = false;
+        yield return new WaitForSeconds(0.5f);
+        game.ChangePhase();
+    }
+
+    private IEnumerator discardPhase()
+    {
+        int busy = game.GetBusyTask();
+        int free = game.GetFreeTask();
+
+        if (Character1 != null && Character1.DiscardPhase != null) { game.busy[free] = true; StartCoroutine(Character1.DiscardPhase(0,this, this)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null && Character2.DiscardPhase != null) { game.busy[free] = true; StartCoroutine(Character2.DiscardPhase(0,this, this)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.DiscardPhase, 0, this, this, Game.DamageType.LossHealth)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.DiscardPhase, 0, this, this, Game.DamageType.LossHealth)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (busy >= 0) game.busy[busy] = false;
+        yield return new WaitForSeconds(0.5f);
+        game.ChangePhase();
+    }
+
+    private IEnumerator endPhase()
+    {
+        int busy = game.GetBusyTask();
+        int free = game.GetFreeTask();
+
+        if (Character1 != null && Character1.EndTurn != null) { game.busy[free] = true; StartCoroutine(Character1.EndTurn(0,this, this)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null && Character2.EndTurn != null) { game.busy[free] = true; StartCoroutine(Character2.EndTurn(0,this, this)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character1 != null) { game.busy[free] = true; StartCoroutine(Character1.AbilityActive(CharacterAbility.AbilityForm.EndTurn, 0, this, this, Game.DamageType.LossHealth)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (Character2 != null) { game.busy[free] = true; StartCoroutine(Character2.AbilityActive(CharacterAbility.AbilityForm.EndTurn, 0, this, this, Game.DamageType.LossHealth)); }
+        while (game.busy[free]) yield return new WaitForSeconds(0.1f);
+
+        if (busy >= 0) game.busy[busy] = false;
+        yield return new WaitForSeconds(0.5f);
+        game.ChangePhase();
+    }
+
     private IEnumerator afterHealing(int number, Player source, Player victim)
     {
         int busy = game.GetBusyTask();
@@ -332,13 +470,13 @@ public class Player : MonoBehaviour
         //game.Busy = true;
         //actionState = ActionState.WaitingDodge;
         targetPlayer = source;
+        victim.actionState = ActionState.WaitingDodgeFromAttack;
         if (source.DodgeAble)
         {
-            if (!AutoAI)
+            if (!victim.AutoAI)
             {
                 if (victim == game.myPlayer)
                 {
-                    victim.actionState = ActionState.WaitingDodge;
                     game.btnCancel.SetActive(true);
                     game.CancelClick += delegate()
                     {
@@ -348,7 +486,7 @@ public class Player : MonoBehaviour
                         game.busy[busy] = false;
                         victim.actionState = ActionState.None;
                     };
-                    while (victim.actionState == ActionState.WaitingDodge) yield return new WaitForSeconds(0.1f);
+                    while (victim.actionState == ActionState.WaitingDodgeFromAttack) yield return new WaitForSeconds(0.1f);
                 }
             }
             else
@@ -370,10 +508,13 @@ public class Player : MonoBehaviour
                             Dodge dodgeCard = hand[i] as Dodge;
                             dodgeCard.UseCard();
                             dodgeNeed--;
-                            if (dodgeNeed <= 0) break;
+                            if (dodgeNeed <= 0)
+                            {
+                                IsDodge = true;
+                                break;
+                            }
                         }
                     }
-                    IsDodge = true;
                 }
                 else
                 {
@@ -381,6 +522,7 @@ public class Player : MonoBehaviour
                 }
             }
         }
+        if (victim.actionState == ActionState.WaitingDodgeFromAttack) victim.actionState = ActionState.None;
         if (busy >= 0) game.busy[busy] = false;
         yield return new WaitForSeconds(0.5f);
     }
@@ -590,7 +732,7 @@ public class Player : MonoBehaviour
                     victim.actionState = ActionState.None;
                 };
             }
-            else if(victim.AutoAI)
+            else if (victim.AutoAI)
             {
                 List<CardForm> hand = game.CardList.GetHandList(victim);
                 int atkCount = 0;
@@ -706,7 +848,7 @@ public class Player : MonoBehaviour
             while (game.busy[free]) yield return new WaitForSeconds(0.1f);
         }
 
-        if (victim.turn == PlayerTurn.Action)victim.actionState = ActionState.Free;
+        if (victim.turn == PlayerTurn.Action) victim.actionState = ActionState.Free;
         else victim.actionState = ActionState.None;
 
         if (source.turn == PlayerTurn.Action) source.actionState = ActionState.Free;
@@ -837,6 +979,11 @@ public class Player : MonoBehaviour
         this.BeforeJudgmentTakeEffect += beforeJudgmentTakeEffect;
         this.AfterJudgmentTakeEffect += afterJudgmentTakeEffect;
         this.Duel += onDuel;
+        this.BeginningOfTurn += beginingOfTurn;
+        this.JudgmentPhase += judgmentPhase;
+        this.DrawPhase += drawPhase;
+        this.DiscardPhase += discardPhase;
+        this.EndPhase += endPhase;
     }
 
     void Update()
@@ -851,14 +998,10 @@ public class Player : MonoBehaviour
                 OnWaitingAction.Invoke();
                 OnWaitingAction = null;
             }
-            if (game != null && DrawPhase == null)
-            {
-                this.DrawPhase += game.DrawCard;
-            }
-            if (game != null && ChangePhase == null)
-            {
-                this.ChangePhase += game.ChangePhase;
-            }
+            //this.GetWeapon();
+            //this.GetArmor();
+            //this.GetPlusVehicle();
+            //this.GetMinusVehicle();
             if (CharacterObject1 != null) Character1 = CharacterObject1.GetComponent<Character>();
             if (CharacterObject2 != null) Character2 = CharacterObject2.GetComponent<Character>();
             if (this.Character1 != null)

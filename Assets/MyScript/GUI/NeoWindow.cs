@@ -20,6 +20,7 @@ public class NeoWindow : MonoBehaviour
     private bool ok = false;
     private bool cancel = false;
     private bool retry = false;
+    int maxLine = 7;
 
     public List<CardForm> Cards = new List<CardForm>();
 
@@ -42,34 +43,8 @@ public class NeoWindow : MonoBehaviour
     {
         //rctWindow1 = new Rect(position.x, position.y, width, height);
 
-        if (this.type == WindowType.FreeWindow)
-        {
-            if (Cards.Count < 10)
-            {
-                height = 150;
-                width = 600;
-            }
-            else if (Cards.Count < 20)
-            {
-
-            }
-            else if (Cards.Count < 30)
-            {
-
-            }
-            else
-            {
-
-            }
-        }
-        if (center)
-        {
-            rctWindow1 = new Rect(Screen.width / 2 - width +(width/3), Screen.height / 2 - height / 2, width, height);
-        }
-        else
-        {
-            rctWindow1 = new Rect(position.x, position.y, width, height);
-        }
+        //if (this.type == WindowType.FreeWindow)
+        
 
     }
 
@@ -82,7 +57,46 @@ public class NeoWindow : MonoBehaviour
 
     void Start()
     {
+        
+        if (Cards.Count > 0)
+        {
+            if (Cards.Count <= maxLine)
+            {
+                float cwidth = Cards[0].Form.Width / 100 * 80;
+                height = 150;
+                width = (cwidth + 10) * Cards.Count + 60;
+            }
+            else if (Cards.Count <= maxLine*2)
+            {
+                float cwidth = Cards[0].Form.Width / 100 * 80;
+                height = 250;
+                width = (cwidth + 10) * maxLine + 60;
+            }
+            else if (Cards.Count <= maxLine*3)
+            {
+                float cwidth = Cards[0].Form.Width / 100 * 80;
+                height = 350;
+                width = (cwidth + 10) * maxLine + 60;
+            }
+            else
+            {
+                float cwidth = Cards[0].Form.Width / 100 * 80;
+                height = 350;
+                width = (cwidth + 10) * maxLine + 60;
+            }
+        }
+
         if (skin == null) skin = Resources.Load("MetalGUISkin") as GUISkin;
+
+        if (center)
+        {
+            rctWindow1 = new Rect(Screen.width / 2 - width + (width / 3), Screen.height / 2 - height / 2, width, height);
+        }
+        else
+        {
+            rctWindow1 = new Rect(position.x, position.y, width, height);
+        }
+
     }
 
     private void MyWindow(int id)
@@ -96,7 +110,7 @@ public class NeoWindow : MonoBehaviour
             style.fontSize = 15;
             style.fontStyle = FontStyle.Bold;
             style.normal.textColor = Color.white;
-            GUI.Label(new Rect(20, 30, this.width-40, this.height - 30), caption, style);
+            GUI.Label(new Rect(20, 30, this.width - 40, this.height - 30), caption, style);
             if (this.type == WindowType.YesNo)
             {
                 yes = GUI.Button(new Rect(40, 80, 80, 30), "Yes");
@@ -126,10 +140,12 @@ public class NeoWindow : MonoBehaviour
                 CardForm c = cf;
                 float cwidth = cf.Form.Width / 100 * 80;
                 float cheight = cf.Form.Height / 100 * 80;
-                Texture2D texture = cf.Form.texture;
-                Rect r = new Rect(30 + ((cwidth + 10) * count), 30 + ((cheight+10) * line), cwidth, cheight);
+                Texture2D texture;
+                if (cf.Form.FaceUp) texture = cf.Form.frontTexture;
+                else texture = cf.Form.backTexture;
+                Rect r = new Rect(30 + ((cwidth + 10) * count), 30 + ((cheight + 10) * line), cwidth, cheight);
                 GUI.DrawTexture(r, texture);
-                if(Input.GetMouseButton(0))
+                if (Input.GetMouseButton(0))
                 {
                     if (r.Contains(Event.current.mousePosition))
                     {
@@ -137,7 +153,8 @@ public class NeoWindow : MonoBehaviour
                         //result = WindowResult.OK;
                     }
                 }
-                if(count > 9)
+                count++;
+                if (count > maxLine - 1)
                 {
                     count = 0;
                     line++;
@@ -183,6 +200,9 @@ public class NeoWindow : MonoBehaviour
             result = WindowResult.Cancel;
             //this.Close();
         }
+
+        rctWindow1.width = width;
+        rctWindow1.height = height;
     }
 }
 
@@ -253,6 +273,31 @@ public class Window
     public void Show()
     {
         game.Modal = true;
+        if (Type == NeoWindow.WindowType.FreeWindow)
+        {
+            if (Cards.Count > 0)
+            {
+                if (Cards.Count < 10)
+                {
+                    Height = 150;
+                    Width = 600;
+                }
+                else if (Cards.Count < 20)
+                {
+                    Height = 300;
+                    Width = 800;
+                }
+                else if (Cards.Count < 30)
+                {
+                    Height = 500;
+                    Width = 800;
+                }
+                else
+                {
+
+                }
+            }
+        }
         dialog.transform.SetParent(game.mainPanel.transform);
     }
 

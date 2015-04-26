@@ -16,7 +16,7 @@ public class CardForm
         set { Form.CardData.CardID = value; }
     }
     public Game game;
-    public float MoveSpeed = 1500f;
+    public float MoveSpeed = 1700f;
 
     public int AbilityUsed = 0;
     public int AbilityUseMax = 99;
@@ -43,7 +43,7 @@ public class CardForm
 
     public delegate bool ConditionDelegate();
     public ConditionDelegate UseCondition = null;
-    
+
     public CardForm(Card card, Game g)
     {
         //Card atkCard = new Card(Card.CardType.Basic, "ATTACK", "attack1", "Used to attack one player.",
@@ -110,6 +110,95 @@ public class CardForm
         }
     }
 
+    public virtual IEnumerator DrawCardAnimation(Player player)
+    {
+        int bs = game.GetBusyTask();
+        if (player == game.myPlayer)
+        {
+            GameObject handPanel = game.handPanel;
+            this.Form.Active = true;
+            this.Form.Owner = player;
+            this.Form.FaceUp = true;
+            this.Form.CardData.State = Card.CardState.Hand;
+            this.Form.State = Card.CardState.Hand;
+            this.Form.UpdateLastInteract();
+            if (handPanel != null && this.Form != null)
+            {
+                Vector3 position = handPanel.transform.localPosition;
+                Vector2 newPos = new Vector2(position.x, position.y);
+                this.Form.Move(newPos, MoveSpeed, null);
+                while (this.Form.Position != newPos) yield return new WaitForSeconds(0.1f);
+                RefreshHand(game.myPlayer);
+            }
+        }
+        else
+        {
+            GameObject playerPanel = player.gameObject;
+            this.Form.Active = true;
+            this.Form.Owner = player;
+            this.Form.FaceUp = false;
+            this.Form.UpdateLastInteract();
+            this.Form.CardData.State = Card.CardState.Hand;
+            this.Form.State = Card.CardState.Hand;
+            Vector3 position = playerPanel.transform.localPosition;
+            Vector2 newPos = new Vector2(position.x, position.y);
+            this.Form.Move(newPos, MoveSpeed, null);
+            while (this.Form.Position != newPos) yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.1f);
+            this.Form.Active = false;
+        }
+
+        yield return new WaitForSeconds(0.1f);
+        if (bs >= 0) game.busy[bs] = false;
+    }
+
+    public virtual IEnumerator ToHandAnimation(Player player)
+    {
+        int bs = game.GetBusyTask();
+        Player owner = this.Form.Owner;
+        if (this.Form.State == Card.CardState.Equipment)
+        {
+            owner.DiscardEquipment(this);
+        }
+        if (player == game.myPlayer)
+        {
+            GameObject handPanel = game.handPanel;
+            this.Form.Active = true;
+            this.Form.Owner = player;
+            this.Form.FaceUp = true;
+            this.Form.CardData.State = Card.CardState.Hand;
+            this.Form.State = Card.CardState.Hand;
+            this.Form.UpdateLastInteract();
+            if (handPanel != null && this.Form != null)
+            {
+                Vector3 position = handPanel.transform.localPosition;
+                Vector2 newPos = new Vector2(position.x, position.y);
+                this.Form.Move(newPos, MoveSpeed, null);
+                while (this.Form.Position != newPos) yield return new WaitForSeconds(0.1f);
+                RefreshHand(game.myPlayer);
+            }
+        }
+        else
+        {
+            GameObject playerPanel = player.gameObject;
+            this.Form.Active = true;
+            this.Form.Owner = player;
+            this.Form.FaceUp = true;
+            this.Form.UpdateLastInteract();
+            this.Form.CardData.State = Card.CardState.Hand;
+            this.Form.State = Card.CardState.Hand;
+            Vector3 position = playerPanel.transform.localPosition;
+            Vector2 newPos = new Vector2(position.x, position.y);
+            this.Form.Move(newPos, MoveSpeed, null);
+            while (this.Form.Position != newPos) yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(0.5f);
+            this.Form.Active = false;
+        }
+
+        yield return new WaitForSeconds(0.1f);
+        if (bs >= 0) game.busy[bs] = false;
+    }
+
     public virtual void RefreshHand(Player player)
     {
         GameObject hand = GameObject.Find("Hand Card Panel");
@@ -163,10 +252,12 @@ public class CardForm
 
     public virtual void Discard()
     {
+        int free = game.GetFreeTask();
+        game.busy[free] = true;
         Vector3 position = game.tempPanel.transform.localPosition;
         Player owner = this.Form.Owner;
         this.Form.Active = true;
-        if(this.Form.State == Card.CardState.Equipment)
+        if (this.Form.State == Card.CardState.Equipment)
         {
             owner.DiscardEquipment(this);
         }
@@ -181,7 +272,8 @@ public class CardForm
             RefreshPiles();
             RefreshHand(game.myPlayer);
             if (owner.Discard != null) owner.StartCoroutine(owner.Discard());
-            if (game.GetBusyTask() <0) game.PilesCollect();
+            game.busy[free] = false;
+            if (game.GetBusyTask() < 0) game.PilesCollect();
             //mainAction.Invoke();
         };
         this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
@@ -191,7 +283,7 @@ public class CardForm
     {
         Player user = this.Form.Owner;
         GameObject equipObject = null;
-        if(this is Weapon)
+        if (this is Weapon)
         {
             equipObject = user.Weapon;
         }
@@ -207,7 +299,7 @@ public class CardForm
         {
             equipObject = user.MinusVehicle;
         }
-        
+
         if (equipObject != null)
         {
             equipObject.SetActive(true);
@@ -277,7 +369,7 @@ public class CardForm
             this.Form.State = Card.CardState.Using;
             RefreshPiles();
             RefreshHand(game.myPlayer);
-            if (mainAction!=null) mainAction.Invoke();
+            if (mainAction != null) mainAction.Invoke();
             mainAction = null;
         };
         this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
@@ -286,6 +378,7 @@ public class CardForm
     public void UseCardAnimation()
     {
         this.Form.Active = true;
+        this.Form.FaceUp = true;
         Vector3 position = game.tempPanel.transform.localPosition;
         if (this.Form.Owner == game.myPlayer)
         {
@@ -303,6 +396,7 @@ public class CardForm
             RefreshHand(game.myPlayer);
             if (mainAction != null) mainAction.Invoke();
             mainAction = null;
+            if (game.GetBusyTask() < 0) game.PilesCollect();
         };
         this.Form.Move(new Vector2(position.x, position.y), MoveSpeed, action);
     }
@@ -455,8 +549,9 @@ public class CardForm
         Player source = this.Form.Owner;
         this.mainAction = delegate()
         {
-            if (attacking.EndAttack != null) attacking.EndAttack.Invoke(0, attacking, source);
-            if (source.EndAttack != null) source.EndAttack.Invoke(0, attacking, source);
+            //if (attacking.EndAttack != null) attacking.EndAttack.Invoke(0, attacking, source);
+            //if (source.EndAttack != null) source.EndAttack.Invoke(0, attacking, source);
+            //source.IsDodge = true;
             if (game.GetBusyTask() < 0) game.PilesCollect();
         };
         UseCardAnimation();
@@ -468,7 +563,7 @@ public class CardForm
         mainAction = delegate()
         {
             source.CommandSeal = true;
-            if(game.GetBusyTask() < 0)game.PilesCollect();
+            if (game.GetBusyTask() < 0) game.PilesCollect();
         };
         UseCardAnimation();
     }
@@ -499,10 +594,6 @@ public class CardForm
     {
         Player source = this.Form.Owner;
         source.actionState = Player.ActionState.OnDuel;
-        this.mainAction = delegate()
-        {
-            if (game.GetBusyTask() < 0) game.PilesCollect();
-        };
         UseCardAnimation();
     }
 
@@ -575,6 +666,73 @@ public class CardForm
         }
         game.btnCancel.SetActive(false);
         game.CancelClick = null;
+    }
+
+    public virtual void SelectToolTarget()
+    {
+        List<GameObject> panelList = new List<GameObject>();
+        foreach (Player p in game.playerList)
+        {
+            if (p == game.myPlayer) continue;
+            else panelList.Add(p.gameObject);
+        }
+
+        //Set click event for each highlighted player
+        foreach (GameObject panel in panelList)
+        {
+            GameObject zzz = panel;
+            Outline border = panel.GetComponent<Outline>();
+            if (border != null)
+            {
+                border.effectColor = Color.red;
+                border.enabled = true;
+            }
+            EventTrigger et = panel.GetComponent<EventTrigger>();
+            if (et != null)
+            {
+                EventTrigger.Entry entry = new EventTrigger.Entry();
+                entry.eventID = EventTriggerType.PointerClick;
+                entry.callback.AddListener((eventData) => { ToolTakeEffect(zzz); });
+                et.delegates = new System.Collections.Generic.List<EventTrigger.Entry>();
+                et.delegates.Add(entry);
+            }
+        }
+
+        //Cancel
+        game.btnCancel.SetActive(true);
+        game.CancelClick += delegate()
+        {
+            foreach (GameObject panel in panelList)
+            {
+                Outline border = panel.GetComponent<Outline>();
+                if (border != null) border.enabled = false;
+                EventTrigger et = panel.GetComponent<EventTrigger>();
+                if (et != null) et.delegates = null;
+            }
+            game.btnCancel.SetActive(false);
+            game.CancelClick = null;
+        };
+    }
+
+    public virtual void ToolTakeEffect(GameObject playerPanel)
+    {
+        foreach (Player player in game.playerList)
+        {
+            GameObject p = player.gameObject;
+            Outline b = p.GetComponent<Outline>();
+            if (b != null) b.enabled = false;
+            EventTrigger et2 = p.GetComponent<EventTrigger>();
+            if (et2 != null) et2.delegates = null;
+        }
+        game.btnCancel.SetActive(false);
+        game.CancelClick = null;
+    }
+
+    public virtual void Respond()
+    {
+        Player owner = this.Form.Owner;
+        owner.IsRespond = true;
+        this.UseCardAnimation();
     }
     #endregion
 

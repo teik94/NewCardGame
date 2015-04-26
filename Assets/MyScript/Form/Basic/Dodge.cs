@@ -24,7 +24,11 @@ public class Dodge : CardForm
     private bool useCondition()
     {
         Player owner = this.Form.Owner;
-        if (owner != null && owner.actionState == Player.ActionState.WaitingDodge)
+        if (owner != null && owner.actionState == Player.ActionState.WaitingDodgeFromAttack)
+        {
+            return true;
+        }
+        else if (owner != null && owner.actionState == Player.ActionState.WaitingDodge)
         {
             return true;
         }
@@ -36,7 +40,16 @@ public class Dodge : CardForm
 
     public override void UseCard()
     {
-        PerformDodge();
+        Player owner = this.Form.Owner;
+        if (owner.actionState == Player.ActionState.WaitingDodgeFromAttack)
+        {
+            PerformDodge();
+        }
+        else if (owner.actionState == Player.ActionState.WaitingDodge)
+        {
+            Respond();
+        }
+        
         //base.UseCard();
     }
 }

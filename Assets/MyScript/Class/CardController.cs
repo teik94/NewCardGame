@@ -20,7 +20,7 @@ public class CardController
     public Card.CardState State = Card.CardState.None;
     public Player Owner = null;
     public DateTime LastInteract = DateTime.Now;
-    public Texture2D texture;
+    public Texture2D frontTexture, backTexture;
     Vector2 position= new Vector2(0,0);
     float width = 50;
     float height = 70;
@@ -213,7 +213,7 @@ public class CardController
             Height = rect.GetSize().y;
         }
         this.CardData = _card;
-		texture = Resources.Load ("Cards/" + CardData.Asset)  as Texture2D;
+		frontTexture = Resources.Load ("Cards/" + CardData.Asset)  as Texture2D;
         Init();
 		Position = new Vector2 (x, y);
 		//Width = width;
@@ -224,9 +224,9 @@ public class CardController
 
     public void Init()
     {
-        Texture2D back = Resources.Load("Cards/Card Back") as Texture2D;
-        MainSprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0f, 0f));
-        BackSprite = Sprite.Create(back, new Rect(0, 0, back.width, back.height), new Vector2(0f, 0f));
+        backTexture = Resources.Load("Cards/Card Back") as Texture2D;
+        MainSprite = Sprite.Create(frontTexture, new Rect(0, 0, frontTexture.width, frontTexture.height), new Vector2(0f, 0f));
+        BackSprite = Sprite.Create(backTexture, new Rect(0, 0, backTexture.width, backTexture.height), new Vector2(0f, 0f));
         GameObject mainPanel = GameObject.Find("Main Panel");
         go = new GameObject(CardData.CardID.ToString());
         this.Sorting = mainPanel.transform.childCount + 1;

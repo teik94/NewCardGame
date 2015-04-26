@@ -231,14 +231,16 @@ public class Game : MonoBehaviour
     #region Function
     public IEnumerator Starting(List<Player> temp)
     {
+        int fr = GetFreeTask();
         foreach (Player p in temp)
         {
             if (p.Status)
             {
+                busy[fr] = true;
                 p.game = this;
                 playerList.Add(p);
-                DrawXCard(4, p);
-                yield return new WaitForSeconds(0.1f);
+                StartCoroutine(DrawCardAction(4, p));
+                while (busy[fr]) yield return new WaitForSeconds(0.1f);
             }
             else
             {
@@ -251,21 +253,23 @@ public class Game : MonoBehaviour
             
             if (p.AutoAI)
             {
-                //SaberArmor avalon = new SaberArmor(Card.CardSuit.Heart, Card.CardNumber.Eight, Card.CardState.Equipment, p, this);
-                //CardList.Add(avalon);
-                //avalon.Form.FaceUp = true;
-                //avalon.Form.Active = true;
-                //avalon.Form.Owner = p;
-                //avalon.UseCard();
+                SaberArmor avalon = new SaberArmor(Card.CardSuit.Heart, Card.CardNumber.Eight, Card.CardState.Equipment, p, this);
+                CardList.Add(avalon);
+                avalon.Form.FaceUp = true;
+                avalon.Form.Active = true;
+                avalon.Form.Owner = p;
+                avalon.UseCard();
+
+                PrelatiSpellbook claren = new PrelatiSpellbook(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.Equipment, p, this);
+                CardList.Add(claren);
+                claren.Form.FaceUp = true;
+                claren.Form.Active = true;
+                claren.Form.Owner = p;
+                claren.UseCard();
             }
             else
             {
-                //PrelatiSpellbook claren = new PrelatiSpellbook(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.Equipment, p, this);
-                //CardList.Add(claren);
-                //claren.Form.FaceUp = true;
-                //claren.Form.Active = true;
-                //claren.Form.Owner = p;
-                //claren.UseCard();
+                
             }
             //yield return new WaitForSeconds(0.1f);
         }
@@ -286,26 +290,38 @@ public class Game : MonoBehaviour
 
     public void DrawXCard(int number, Player player)
     {
-        if (number == 0) return;
-        System.Random rd = new System.Random();
-        List<CardForm> deck = CardList.GetDeckList();
-        int index = rd.Next(0, deck.Count - 1);
-        CardForm cf = deck[index];
-        cf.DrawFromDeck(number, player);
+        //if (number == 0) return;
+        //System.Random rd = new System.Random();
+        //List<CardForm> deck = CardList.GetDeckList();
+        //int index = rd.Next(0, deck.Count - 1);
+        //CardForm cf = deck[index];
+        //cf.DrawFromDeck(number, player);
+        StartCoroutine(DrawCardAction(number, player));
+    }
+
+    public IEnumerator DrawCardAction(int number, Player player)
+    {
+        int bs = GetBusyTask();
+
+        while (number > 0)
+        {
+            //busy[fr] = true;
+            System.Random rd = new System.Random();
+            List<CardForm> deck = CardList.GetDeckList();
+            int index = rd.Next(0, deck.Count - 1);
+            CardForm cf = deck[index];
+            StartCoroutine(cf.DrawCardAnimation(player));
+            //while (busy[fr]) yield return new WaitForSeconds(0.1f);
+            number -= 1;
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        yield return new WaitForSeconds(0.1f);
+        if (bs >= 0) busy[bs] = false;
     }
 
     public void InitListCard()
     {
-        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Five, Card.CardState.None, null, this));
-        CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Four, Card.CardState.None, null, this));
-        CardList.Add(new Attack(Card.CardSuit.Diamond, Card.CardNumber.Jack, Card.CardState.None, null, this));
-        CardList.Add(new Attack(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
-        CardList.Add(new Attack(Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.None, null, this));
-        CardList.Add(new Attack(Card.CardSuit.Diamond, Card.CardNumber.Ace, Card.CardState.None, null, this));
-        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Six, Card.CardState.None, null, this));
-        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, null, this));
-        CardList.Add(new Attack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
         CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
         CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Five, Card.CardState.None, null, this));
         CardList.Add(new Attack(Card.CardSuit.Club, Card.CardNumber.Four, Card.CardState.None, null, this));
@@ -321,14 +337,45 @@ public class Game : MonoBehaviour
         CardList.Add(new MagicAttack(Card.CardSuit.Club, Card.CardNumber.Five, Card.CardState.None, null, this));
         CardList.Add(new MagicAttack(Card.CardSuit.Club, Card.CardNumber.Four, Card.CardState.None, null, this));
         CardList.Add(new MagicAttack(Card.CardSuit.Diamond, Card.CardNumber.Jack, Card.CardState.None, null, this));
-        CardList.Add(new MagicAttack(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
-        CardList.Add(new MagicAttack(Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.None, null, this));
-        CardList.Add(new MagicAttack(Card.CardSuit.Diamond, Card.CardNumber.Ace, Card.CardState.None, null, this));
-        CardList.Add(new MagicAttack(Card.CardSuit.Spade, Card.CardNumber.Six, Card.CardState.None, null, this));
-        CardList.Add(new MagicAttack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, null, this));
-        CardList.Add(new MagicAttack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new MagicAttack(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
+        //CardList.Add(new MagicAttack(Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        //CardList.Add(new MagicAttack(Card.CardSuit.Diamond, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        //CardList.Add(new MagicAttack(Card.CardSuit.Spade, Card.CardNumber.Six, Card.CardState.None, null, this));
+        //CardList.Add(new MagicAttack(Card.CardSuit.Spade, Card.CardNumber.Ten, Card.CardState.None, null, this));
+        //CardList.Add(new MagicAttack(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
 
 
+        CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Four, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Club, Card.CardNumber.Two, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Ten, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Four, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Club, Card.CardNumber.Two, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Seven, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Ten, Card.CardState.None, null, this));
+        CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
+
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
+
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal1", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal2", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal3", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal4", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal5", null, this));
+        //CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal6", null, this));
 
         //CardList.Add(new BerserCar(Card.CardSuit.Diamond, Card.CardNumber.Eight, Card.CardState.None, null, this));
         //CardList.Add(new GaeBuidhe(Card.CardSuit.Diamond, Card.CardNumber.Eight, Card.CardState.None, null, this));
@@ -352,50 +399,20 @@ public class Game : MonoBehaviour
         //CardList.Add(new GordiusWheel(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
         //CardList.Add(new DivineBull(Card.CardSuit.Club, Card.CardNumber.Seven, Card.CardState.None, null, this));
 
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
-        CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        //CardList.Add(new Duel(Card.CardSuit.Club, Card.CardNumber.Eight, Card.CardState.None, null, this));
+        //CardList.Add(new KingTreasure(Card.CardSuit.Heart, Card.CardNumber.Ace, Card.CardState.None, null, this));
+        //CardList.Add(new GateOfBabylon(Card.CardSuit.Diamond, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        //CardList.Add(new RageOfBerserker(Card.CardSuit.Diamond, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        //CardList.Add(new Collaboration(Card.CardSuit.Diamond, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        //CardList.Add(new GrailOfHeaven(Card.CardSuit.Diamond, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        //CardList.Add(new KnightOfHonor(Card.CardSuit.Diamond, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        //CardList.Add(new RuleBreaker(Card.CardSuit.Diamond, Card.CardNumber.Queen, Card.CardState.None, null, this));
 
-        //CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Four, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Ace, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Club, Card.CardNumber.Two, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Queen, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Seven, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Ten, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Four, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Spade, Card.CardNumber.Ace, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Club, Card.CardNumber.Two, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.Queen, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Seven, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Diamond, Card.CardNumber.Ten, Card.CardState.None, null, this));
-        //CardList.Add(new Dodge(Card.CardSuit.Heart, Card.CardNumber.King, Card.CardState.None, null, this));
-
-        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-        //CardList.Add(new HolyGrail(Card.CardSuit.Heart, Card.CardNumber.Three, Card.CardState.None, null, this));
-
-        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal1", null, this));
-        //CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal2", null, this));
-        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal3", null, this));
-        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal4", null, this));
-        //CardList.Add(new CommandSeal(Card.CardSuit.Spade, Card.CardNumber.Three, Card.CardState.None, "CommandSeal5", null, this));
-        //CardList.Add(new CommandSeal(Card.CardSuit.Club, Card.CardNumber.Three, Card.CardState.None, "CommandSeal6", null, this));
-
+        for (int i = 0; i < 20; i++)
+        {
+            CardList.Add(new RuleBreaker(Card.CardSuit.Diamond, Card.CardNumber.Queen, Card.CardState.None, null, this));
+        }
+        
         CardList.Shuffle();
     }
 
@@ -866,6 +883,127 @@ public class Game : MonoBehaviour
         judgemntFinalResult = null;
         actionAfterJudgment = null;
     }
+    public IEnumerator DamageAOE(int number, Player source, List<Player> target, CardForm cf, DamageType dmgType)
+    {
+        int i = GetBusyTask();
+        int j = GetFreeTask();
+
+        for (int k = 0; k < target.Count; k++)
+        {
+            GameObject panel = target[k].gameObject;
+            Outline border = panel.GetComponent<Outline>();
+            if (border != null)
+            {
+                border.effectColor = Color.blue;
+                border.enabled = true;
+            }
+
+            //Asking respond
+            if (target[k].Respond != null)
+            {
+                busy[j] = true;
+                StartCoroutine(target[k].Respond(number, source, target[k], dmgType));
+            }
+            while (busy[j]) yield return new WaitForSeconds(0.1f);
+            //End asking
+
+            if (!target[k].IsRespond)
+            {
+                if (source.DamageModifier != null)
+                { busy[j] = true; StartCoroutine(source.DamageModifier(number, source, target[k], dmgType)); }
+                while (busy[j]) yield return new WaitForSeconds(0.1f);
+
+                if (target[k].BeforeDamageCalculation != null)
+                { busy[j] = true; StartCoroutine(target[k].BeforeDamageCalculation(number, source, target[k], dmgType)); }
+                while (busy[j]) yield return new WaitForSeconds(0.1f);
+
+                if (target[k].DamageCalculation != null)
+                { busy[j] = true; StartCoroutine(target[k].DamageCalculation(number, source, target[k], dmgType)); }
+                while (busy[j]) yield return new WaitForSeconds(0.1f);
+
+                if (source.CauseDamage != null)
+                { busy[j] = true; StartCoroutine(source.CauseDamage(number, source, target[k], dmgType)); }
+                while (busy[j]) yield return new WaitForSeconds(0.1f);
+
+                if (target[k].TakeDamage != null)
+                { busy[j] = true; StartCoroutine(target[k].TakeDamage(number, source, target[k], dmgType)); }
+                while (busy[j]) yield return new WaitForSeconds(0.1f);
+            }
+
+            yield return new WaitForSeconds(0.5f);
+            if (border != null) border.enabled = false;
+            target[k].IsRespond = false;
+            target[k].Respond = null;
+        }
+
+        if (i >= 0) busy[i] = false;
+        yield return new WaitForSeconds(0.1f);
+        if (GetBusyTask() < 0)
+        {
+            PilesCollect();
+            if (source.Turn == Player.PlayerTurn.Action) source.actionState = Player.ActionState.Free;
+        }
+    }
+    public IEnumerator HealAOE(int number, Player source, List<Player> target, CardForm cf)
+    {
+        int i = GetBusyTask();
+        int j = GetFreeTask();
+
+        for (int k = 0; k < target.Count; k++)
+        {
+            GameObject panel = target[k].gameObject;
+            Outline border = panel.GetComponent<Outline>();
+            if (border != null)
+            {
+                border.effectColor = Color.blue;
+                border.enabled = true;
+            }
+
+            if (target[k].Healing != null)
+            { busy[j] = true; StartCoroutine(target[k].Healing(number, source, target[k])); }
+            while (busy[j]) yield return new WaitForSeconds(0.1f);
+
+            yield return new WaitForSeconds(0.5f);
+            if (border != null) border.enabled = false;
+            target[k].IsRespond = false;
+            target[k].Respond = null;
+        }
+
+        if (i >= 0) busy[i] = false;
+        yield return new WaitForSeconds(0.1f);
+        if (GetBusyTask() < 0)
+        {
+            PilesCollect();
+            if (source.Turn == Player.PlayerTurn.Action) source.actionState = Player.ActionState.Free;
+        }
+    }
+
+    public List<Player> GetPlayerByRound(Player owner)
+    {
+        int currentIndex = 0;
+        for (int i = 0; i < playerList.Count; i++)
+        {
+            if (playerList[i] == owner)
+            {
+                currentIndex = i + 1;
+                if (currentIndex >= playerList.Count) currentIndex = 0;
+                break;
+            }
+        }
+        List<Player> pList = new List<Player>();
+        for (int i = 0; i < playerList.Count; i++)
+        {
+            if (playerList[currentIndex] == owner) continue;
+            else
+            {
+                pList.Add(playerList[currentIndex]);
+            }
+
+            if (currentIndex < (playerList.Count - 1)) currentIndex++;
+            else currentIndex = 0;
+        }
+        return pList;
+    }
     #endregion
 }
 
@@ -940,7 +1078,6 @@ public static class Extension
             list[n] = value;
         }
     }
-
 }
 
 

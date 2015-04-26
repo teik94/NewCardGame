@@ -46,6 +46,10 @@ public class MagicAttack: CardForm
         {
             RespondDuel();
         }
+        else if (owner.actionState == Player.ActionState.WaitingAttack)
+        {
+            Respond();
+        }
         else
         {
             Attack();

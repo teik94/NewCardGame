@@ -33,6 +33,10 @@ public class Attack: CardForm
         {
             return true;
         }
+        else if (owner != null && owner.actionState == Player.ActionState.WaitingAttack)
+        {
+            return true;
+        }
         else
         {
             return false;
@@ -46,9 +50,13 @@ public class Attack: CardForm
         {
             RespondDuel();
         }
+        else if (owner.actionState == Player.ActionState.WaitingAttack)
+        {
+            Respond();
+        }
         else
         {
-            Attack(); 
+            Attack();
         }
     }
 }
