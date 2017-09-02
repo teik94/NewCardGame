@@ -169,16 +169,11 @@ public class CardController
             move_speed = Vector2.one;
         }
         float move_time = MoveSpeed * Time.deltaTime;
-        //Debug.Log("X:" + newPosition.x);
-        //Debug.Log("Y:" + newPosition.y);
-        //float move_time = MoveSpeed;
         Vector2 move_distance = move_speed * move_time;
-        //Console.WriteLine(move_speed.ToString());
         if ((Math.Abs(Position.x - newPosition.x) <= Math.Abs(move_distance.x))
             && (Math.Abs(Position.y - newPosition.y) <= Math.Abs(move_distance.y)))
         {
             this.Position = newPosition;
-            //rb.MovePosition(newPosition);
 
             MoveSpeed = 0f;
             this.FormsUpdate -= this.Mover;
@@ -192,7 +187,6 @@ public class CardController
         float newX = this.Position.x + move_distance.x;
         float newY = this.Position.y + move_distance.y;
         this.Position = new Vector2(newX, newY);
-        //rb.MovePosition(new Vector2(newX, newY));
     } 
 
     public void UpdateLastInteract()
@@ -332,13 +326,13 @@ public class CardController
         entry6.eventID = EventTriggerType.PointerExit;
         entry6.callback.AddListener((eventData) => { onMouseUp(); });
 
-        eventTrigger.delegates = new System.Collections.Generic.List<EventTrigger.Entry>();
-        eventTrigger.delegates.Add(entry);
-        eventTrigger.delegates.Add(entry2);
-        eventTrigger.delegates.Add(entry3);
-        eventTrigger.delegates.Add(entry4);
-        eventTrigger.delegates.Add(entry5);
-        eventTrigger.delegates.Add(entry6); 
+        eventTrigger.triggers = new System.Collections.Generic.List<EventTrigger.Entry>();
+        eventTrigger.triggers.Add(entry);
+        eventTrigger.triggers.Add(entry2);
+        eventTrigger.triggers.Add(entry3);
+        eventTrigger.triggers.Add(entry4);
+        eventTrigger.triggers.Add(entry5);
+        eventTrigger.triggers.Add(entry6); 
         #endregion
 
     }

@@ -484,8 +484,8 @@ public class CardForm
                 EventTrigger.Entry entry = new EventTrigger.Entry();
                 entry.eventID = EventTriggerType.PointerClick;
                 entry.callback.AddListener((eventData) => { PerformAttack(zzz); });
-                et.delegates = new System.Collections.Generic.List<EventTrigger.Entry>();
-                et.delegates.Add(entry);
+                et.triggers = new System.Collections.Generic.List<EventTrigger.Entry>();
+                et.triggers.Add(entry);
             }
         }
 
@@ -498,7 +498,7 @@ public class CardForm
                 Outline border = panel.GetComponent<Outline>();
                 if (border != null) border.enabled = false;
                 EventTrigger et = panel.GetComponent<EventTrigger>();
-                if (et != null) et.delegates = null;
+                if (et != null) et.triggers = null;
             }
         };
     }
@@ -518,7 +518,7 @@ public class CardForm
             Outline border = panel.GetComponent<Outline>();
             if (border != null) border.enabled = false;
             EventTrigger et = panel.GetComponent<EventTrigger>();
-            if (et != null) et.delegates = null;
+            if (et != null) et.triggers = null;
         }
         game.btnCancel.SetActive(false);
         game.CancelClick = null;
@@ -623,8 +623,8 @@ public class CardForm
                 EventTrigger.Entry entry = new EventTrigger.Entry();
                 entry.eventID = EventTriggerType.PointerClick;
                 entry.callback.AddListener((eventData) => { PerformDuel(zzz); });
-                et.delegates = new System.Collections.Generic.List<EventTrigger.Entry>();
-                et.delegates.Add(entry);
+                et.triggers = new System.Collections.Generic.List<EventTrigger.Entry>();
+                et.triggers.Add(entry);
             }
         }
 
@@ -637,7 +637,7 @@ public class CardForm
                 Outline border = panel.GetComponent<Outline>();
                 if (border != null) border.enabled = false;
                 EventTrigger et = panel.GetComponent<EventTrigger>();
-                if (et != null) et.delegates = null;
+                if (et != null) et.triggers = null;
             }
             game.btnCancel.SetActive(false);
             game.CancelClick = null;
@@ -662,7 +662,7 @@ public class CardForm
             Outline b = p.GetComponent<Outline>();
             if (b != null) b.enabled = false;
             EventTrigger et2 = p.GetComponent<EventTrigger>();
-            if (et2 != null) et2.delegates = null;
+            if (et2 != null) et2.triggers = null;
         }
         game.btnCancel.SetActive(false);
         game.CancelClick = null;
@@ -693,8 +693,8 @@ public class CardForm
                 EventTrigger.Entry entry = new EventTrigger.Entry();
                 entry.eventID = EventTriggerType.PointerClick;
                 entry.callback.AddListener((eventData) => { ToolTakeEffect(zzz); });
-                et.delegates = new System.Collections.Generic.List<EventTrigger.Entry>();
-                et.delegates.Add(entry);
+                et.triggers = new System.Collections.Generic.List<EventTrigger.Entry>();
+                et.triggers.Add(entry);
             }
         }
 
@@ -707,7 +707,7 @@ public class CardForm
                 Outline border = panel.GetComponent<Outline>();
                 if (border != null) border.enabled = false;
                 EventTrigger et = panel.GetComponent<EventTrigger>();
-                if (et != null) et.delegates = null;
+                if (et != null) et.triggers = null;
             }
             game.btnCancel.SetActive(false);
             game.CancelClick = null;
@@ -722,7 +722,7 @@ public class CardForm
             Outline b = p.GetComponent<Outline>();
             if (b != null) b.enabled = false;
             EventTrigger et2 = p.GetComponent<EventTrigger>();
-            if (et2 != null) et2.delegates = null;
+            if (et2 != null) et2.triggers = null;
         }
         game.btnCancel.SetActive(false);
         game.CancelClick = null;
